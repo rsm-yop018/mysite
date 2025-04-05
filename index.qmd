@@ -1,0 +1,13 @@
+---
+title: "Yoonjeong Park"
+image: "image/image_1.jpeg"
+about:
+    template: jolla
+    links:
+    - icon: envelope
+      href: yop018@ucsd.edu
+    - icon: linkedin
+      href: https://www.linkedin.com/in/yoonjeongpark/
+---
+
+Welcome to my website!
