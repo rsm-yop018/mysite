@@ -24,7 +24,7 @@ Within the match arm, the researchers orthogonally randomized three design featu
 This yielded \(3 \times 4 \times 3 = 36\) distinct match treatments, all printed on otherwise identical stationery.  
 The two primary outcomes were (i) response rate — whether a donor gave within one month—and (ii) dollars contributed.  Karlan & List find that any match increases the likelihood of giving by roughly 22 % and the revenue per letter by 19 %, yet higher match ratios (2:1 and 3:1) do not outperform the simple 1:1 offer. :contentReference[oaicite:0]{index=0}&#8203;:contentReference[oaicite:1]{index=1}
 
-This project seeks to replicate their results.
+This project seeks to replicate their results.         
 
 
 ## Data
