@@ -107,7 +107,7 @@ print(f"{df.shape[0]:,} observations × {df.shape[1]} variables loaded.")
 
 ### Balance Test 
 
-To confirm our randomization worked properly, we compared key baseline characteristics between the treatment and control groups. Because these metrics were recorded before any letters were sent, any clear differences would suggest an issue in how participants were randomly assigned.
+To confirm the randomization worked properly, I compared key baseline characteristics between the treatment and control groups. Because these metrics were recorded before any letters were sent, any clear differences would suggest an issue in how participants were randomly assigned.
 
 **Baseline variables examined**  
 - **`hpa`** – Highest previous contribution (signals donor capacity)  
@@ -116,7 +116,7 @@ To confirm our randomization worked properly, we compared key baseline character
 - **`female`** – Gender indicator (checks demographic balance)
 
 
-We ran **two-sample *t* tests** to see if the treatment and control group means differed. Formally, the *t* statistic measures how far apart the two group averages are, relative to the variability within each group:
+I ran two-sample *t* tests to see if the treatment and control group means differed. Formally, the *t* statistic measures how far apart the two group averages are, relative to the variability within each group:
 
 \[
 t = \frac{\bar X_T - \bar X_C}{\sqrt{\frac{S_T^2}{N_T} + \frac{S_C^2}{N_C}}}
@@ -158,7 +158,7 @@ None of the four |*t*| values surpassed the usual 1.96 cutoff for a 5% significa
 In practical terms, treatment and control groups are alike in giving capacity, donation recency, engagement history, and gender composition. This aligns with Table 1 of Karlan & List (2007), confirming the randomization worked as intended. Since the baseline is balanced, any differences in donation behavior later on can be viewed as **causal impacts of the match offer**, rather than quirks of how participants were assigned.
 
 
-Next we replicate the same check with simple linear regression, which yields
+Next I replicate the same check with simple linear regression, which yields
 identical *t* statistics and reinforces this conclusion.
 
 ```{python}
@@ -175,6 +175,7 @@ ols = pd.DataFrame(
         columns=["Coef","t-stat"], index=["hpa","mrm2","freq","female"]).round(2)
 ols
 ```
+
 The manual two-sample *t* tests and our quick OLS regressions yield nearly identical *t*-statistics for each baseline variable (see the tables above). This aligns perfectly with theory: with a single 0/1 predictor, OLS replicates the standard two-sample *t* test.
 
 Since all |*t*| values remain well under the 1.96 threshold, we fail to reject the null hypothesis of equal means for `hpa` (giving capacity), `mrm2` (donation recency), `freq` (engagement frequency), and `female` (gender). In simpler terms, the treatment and control groups start off the same.
@@ -223,7 +224,7 @@ While the bar chart indicates that the match letter nudged more people to donate
 * Run the simplest regression, a single-predictor linear probability model (`gave ~ treatment`). By design, its *t*-statistic aligns with the manual test, but showing both methods assures transparency.
 * Compare our findings to Table 2a, Panel A of Karlan & List (2007) to validate the replication.
 
-If these tests yield small p-values—matching the original study’s results—we can be confident that simply mentioning a matching grant increases the fraction of donors.
+If these tests yield small p-values—matching the original study’s results, we can be confident that simply mentioning a matching grant increases the fraction of donors.
 
 ```{python}
 #| label: donate-stats
@@ -283,9 +284,9 @@ No matter how we look at the data, the message is the same: donors are more like
 
 ### Differences between Match Rates
 
-Next, we explore how different match ratios—1:1, 2:1, and 3:1—affect donor response rates.
+Next, I explore how different match ratios—1:1, 2:1, and 3:1—affect donor response rates.
 
-So far, we’ve grouped all match offers together. In reality, donors received three distinct “price discounts,” so the natural question is whether a higher match multiplier translates into higher participation.
+So far, I’ve grouped all match offers together. In reality, donors received three distinct “price discounts,” so the natural question is whether a higher match multiplier translates into higher participation.
 
 
 ```{python}
@@ -304,7 +305,7 @@ ratio_rate
 
 Pair-wise *t*-tests  show no meaningful increase. Moving from a 1:1 to a 2:1 match raises the response rate by only 0.2 percentage points—far from the 1.96 threshold for conventional significance (t ≈ 1.0). The shift from 1:1 to 3:1 is similarly small and insignificant, and the comparison between 2:1 and 3:1 is essentially zero. These findings match Karlan & List’s own observation that “larger match ratios do not appear to matter much” (2007, p. 8). In other words, once donors know a match exists, raising the multiplier from 1:1 to 3:1 does not yield extra participation.
 
-To verify these pairwise t-tests all at once, we run a linear probability model that includes a separate indicator for each match ratio. Using 1:1 as the intuitive benchmark, the coefficients on 2:1 and 3:1 tell us whether richer multipliers entice more donors.
+To verify these pairwise t-tests all at once, I ran a linear probability model that includes a separate indicator for each match ratio. Using 1:1 as the intuitive benchmark, the coefficients on 2:1 and 3:1 tells whether richer multipliers entice more donors.
 
 ```{python}
 #| label: ratio-reg
@@ -336,7 +337,7 @@ reg.summary2().tables[1].round(4)
 
 Higher match ratios nudge the estimate upward by a fraction, but the change is too small relative to sampling variability to be considered reliable. In practice, a simple 1:1 match accounts for nearly the entire increase in participation. Upping the multiplier to 2:1 or 3:1 does not produce a statistically significant rise in donors—consistent with the authors’ remark on page 8.
 
-We can quantify the gap by calculating the differences two ways: directly from the raw data and by subtracting the fitted coefficients from our model.
+I quantified the gap by calculating the differences two ways: directly from the raw data and by subtracting the fitted coefficients from our model.
 
 
 ```{python}
@@ -373,19 +374,101 @@ Even under close inspection, these gaps remain small:
 * Going from 1:1 to 2:1 delivers only a 0.19 percentage-point increase, which is well within the ±0.14 pp margin of error.
 * Shifting from 2:1 to 3:1 moves the needle by 0.01 pp—effectively zero.
 
-Whether we measure the differences directly or via regression coefficients, the conclusion is the same: richer match ratios do not generate a meaningful uptick in donors. The real boost comes from the presence of a match, not the size of it. For fundraisers, this suggests a straightforward 1:1 offer captures almost the full benefit without requiring the lead donor to fund a higher multiplier.
+Whether measuring the differences directly or via regression coefficients, the conclusion is the same: richer match ratios do not generate a meaningful uptick in donors. The real boost comes from the presence of a match, not the size of it. For fundraisers, this suggests a straightforward 1:1 offer captures almost the full benefit without requiring the lead donor to fund a higher multiplier.
 
 
 
 ### Size of Charitable Contribution
 
-In this subsection, I analyze the effect of the size of matched donation on the size of the charitable contribution.
+Our earlier analysis focused on whether a person decides to give at all. Now, we turn to whether the match letter also influences the total dollars raised.
 
-_todo: Calculate a t-test or run a bivariate linear regression of the donation amount on the treatment status. What do we learn from doing this analysis?_
+First, we treat every solicitation equally—including those that resulted in no donations. Under this approach, a match offer raises average revenue by about 15 cents per letter compared to the standard appeal. Although that’s roughly a 20% increase on an 81-cent baseline, the statistical significance is borderline, with the probability of seeing such a gap by chance hovering just above the 5% threshold. In other words, the rise in per-letter revenue seems mainly driven by converting more non-donors, yet the total lift remains modest and only marginally significant.
 
-_todo: now limit the data to just people who made a donation and repeat the previous analysis. This regression allows you to analyze how much respondents donate conditional on donating some positive amount. Interpret the regression coefficients -- what did we learn? Does the treatment coefficient have a causal interpretation?_ 
+```{python}
+#| label: amt-uncond
+#| code-fold: true
+#| code-summary: "Show code for unconditional amount"
+#| tbl-cap: "Average dollars per letter"
+import pandas as pd, statsmodels.formula.api as smf, scipy.stats as st, numpy as np
 
-_todo: Make two plot: one for the treatment group and one for the control. Each plot should be a histogram of the donation amounts only among people who donated. Add a red vertical bar or some other annotation to indicate the sample average for each plot._
+# raw means
+mean_control = df.loc[df.treatment == 0, "amount"].mean()
+mean_treat   = df.loc[df.treatment == 1, "amount"].mean()
+
+# t-test
+c = df[df.treatment == 0]["amount"]
+t = df[df.treatment == 1]["amount"]
+se = np.sqrt(c.var(ddof=1)/len(c) + t.var(ddof=1)/len(t))
+tstat = (t.mean() - c.mean()) / se
+p_val = 2 * (1 - st.t.cdf(abs(tstat), df=len(df) - 2))
+
+# OLS check
+ols_un = smf.ols("amount ~ treatment", data=df).fit()
+
+pd.DataFrame({
+    "Mean ($) Control": [mean_control.round(2)],
+    "Mean ($) Treatment": [mean_treat.round(2)],
+    "Diff ($)": [(mean_treat-mean_control).round(2)],
+    "t-stat": [round(tstat, 2)],
+    "p-value": [round(p_val, 3)]
+})
+```
+
+Next, we isolate people who already decided to donate to see if the match offer encouraged bigger gifts. Among those who opened their wallets, the match group’s average gift is around \$43.9 versus \$45.5 in the control—a difference of only \$1.7, which is well within normal variation (its p-value is comfortably above common significance levels). Since this comparison involves a subset that the match treatment itself helped shape, it’s more descriptive than causal; the random assignment no longer ensures the donors in each group have similar traits. Overall, the clear story is that matching nudges more people to give but does not substantially increase average contributions among those who were already inclined to donate.
+
+
+```{python}
+#| label: amt-cond
+#| code-fold: true
+#| code-summary: "Show code for conditional amount"
+#| tbl-cap: "Average gift size among donors"
+donors = df[df.gave == 1].copy()
+
+mean_c = donors.loc[donors.treatment == 0, "amount"].mean()
+mean_t = donors.loc[donors.treatment == 1, "amount"].mean()
+
+ols_con = smf.ols("amount ~ treatment", data=donors).fit()
+
+pd.DataFrame({
+    "Mean ($) Control": [mean_c.round(2)],
+    "Mean ($) Treatment": [mean_t.round(2)],
+    "Diff ($)": [(mean_t-mean_c).round(2)],
+    "p-value": [round(ols_con.pvalues['treatment'], 3)]
+})
+```
+
+
+```{python}
+#| label: histplots-vertical
+#| fig-cap: "Gift‐size distribution among donors"
+#| fig-width: 6
+#| fig-height: 6
+#| echo: false
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(1, 2, figsize=(7, 3.5), sharey=True)
+
+ctl = donors[donors.treatment == 0]["amount"]
+trt = donors[donors.treatment == 1]["amount"]
+
+ax[0].hist(ctl, bins=30, alpha=0.7, color="lightblue")
+ax[0].axvline(ctl.mean(), color="red", linestyle="--")
+ax[0].set_title("Control donors")
+ax[0].set_ylabel("Count")
+
+ax[1].hist(trt, bins=30, alpha=0.7, color="#c29ff3")
+ax[1].axvline(trt.mean(), color="red", linestyle="--")
+ax[1].set_title("Match-letter donors")
+ax[1].set_xlabel("Dollars")
+ax[1].set_ylabel("Count")
+
+plt.tight_layout()
+
+```
+
+Two histograms drive home the same point. In both the treatment and control arms, most gifts fall below \$50, with an occasional larger check beyond \$200. The red dashed line in each histogram indicates the average gift, and these lines are nearly indistinguishable, reinforcing that the distribution of gift amounts barely changes when a match is mentioned. Put simply, matching grants boost participation rather than the average gift level.
+
+Combining these findings with the unconditional revenue result suggests that matching works by widening the donor base, not by persuading existing donors to give more. For fundraisers, this implies that the true value of a match lies in converting potential donors on the fence, while strategies aimed at increasing gift size will likely require different tactics.
 
 
 ## Simulation Experiment
@@ -397,13 +480,106 @@ Suppose the true distribution of respondents who do not get a charitable donatio
 Further suppose that the true distribution of respondents who do get a charitable donation match of any size  is Bernoulli with probability p=0.022 that a donation is made.
 
 ### Law of Large Numbers
+Below is a plot illustrating how the sample average converges to the true treatment effect.
 
-_to do:  Make a plot like those on slide 43 from our first class and explain the plot to the reader. To do this, you will simulate 100,00 draws from the control distribution and 10,000 draws from the treatment distribution. You'll then calculate a vector of 10,000 differences, and then you'll plot the cumulative average of that vector of differences. Comment on whether the cumulative average approaches the true difference in means._
+```{python}
+#| label: lln-sim
+#| code-fold: true
+#| code-summary: "Show simulation code"
+#| fig-cap: "Cumulative average of simulated donation-rate differences"
+import numpy as np, matplotlib.pyplot as plt
+
+np.random.seed(42)
+
+# 100 000 control draws, 10 000 treatment draws
+control_pool = np.random.binomial(1, 0.018, 100_000)
+treat_draw   = np.random.binomial(1, 0.022, 10_000)
+
+# pick 10 000 control outcomes to pair with the 10 000 treatment draws
+control_draw = control_pool[:10_000]            # simplest: first 10k
+
+diff = treat_draw - control_draw                # 10 000 pair-wise gaps
+cum_avg = np.cumsum(diff) / np.arange(1, 10_001)
+
+plt.plot(cum_avg, linewidth=1)
+plt.axhline(0.004, color="red", linestyle="--", label="True effect 0.004")
+plt.xlabel("Number of paired draws")
+plt.ylabel("Cumulative average difference")
+plt.title("Sample average converges to true treatment effect")
+plt.legend()
+plt.tight_layout()
+```
+
+Early on, the blue line fluctuates sharply because each new observation carries substantial weight when there are only a few paired draws. As the sample grows, these swings diminish, and the line settles into a narrow band around the dashed red line at 0.004. By around 5,000 pairs, the estimate already hovers within a few ten-thousandths of the target, and by 10,000 it rarely deviates. This pattern vividly demonstrates the Law of Large Numbers: when observations are independent, the cumulative average locks in on the actual population difference. In practical terms, it’s a clear reminder that larger samples generate more reliable estimates.
+
+
+
 
 
 ### Central Limit Theorem
+To visualize how sampling variation diminishes and how the distribution of results becomes more bell-shaped as n increases, I repeated the following experiment 1,000 times:
 
-_to do: Make 4 histograms like those on slide 44 from our first class at sample sizes 50, 200, 500, and 1000 and explain these plots to the reader. To do this for a sample size of e.g. 50, take 50 draws from each of the control and treatment distributions, and calculate the average difference between those draws. Then repeat that process 999 more times so that you have 1000 averages. Plot the histogram of those averages. Comment on whether zero is in the "middle" of the distribution or whether it's in the "tail."_
+1. Draw n observations from the control Bernoulli(0.018).  
+2. Draw n observations from the treatment Bernoulli(0.022).  
+3. Record the difference in sample means.
+
+I ran this procedure for n = 50, 200, 500, and 1,000, then plot the distribution of the 1,000 simulated differences for each value of n.
+
+```{python}
+#| label: clt-histograms
+#| code-fold: true
+#| code-summary: "Show simulation code"
+#| fig-cap: "Sampling distribution of the treatment effect at four sample sizes"
+#| fig-width: 8
+#| fig-height: 6
+import numpy as np, matplotlib.pyplot as plt
+
+np.random.seed(42)
+p_c, p_t = 0.018, 0.022
+sizes     = [50, 200, 500, 1000]
+diffs_all = {}
+
+for n in sizes:
+    control = np.random.binomial(1, p_c, (1000, n)).mean(axis=1)
+    treat   = np.random.binomial(1, p_t, (1000, n)).mean(axis=1)
+    diffs_all[n] = treat - control
+
+fig, axes = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)
+axes = axes.ravel()
+
+for ax, n in zip(axes, sizes):
+    ax.hist(diffs_all[n], bins=30, color="#c29ff3", alpha=0.9)
+    ax.axvline(0, color="black", linestyle="--", linewidth=1)      # reference at zero
+    ax.axvline(p_t - p_c, color="gold", linestyle="-.", linewidth=1)  # true effect 0.004
+    ax.set_title(f"n = {n}")
+    ax.set_xlabel("Difference in means")
+    ax.set_ylabel("Count")
+
+plt.tight_layout()
+```
+
+
+- **n = 50**  
+  The histogram is wide and irregular, ranging roughly from –5% to +10%. The zero line (dashed) cuts through the center, indicating that a study with only 50 participants per group could easily produce an estimate near zero.
+
+- **n = 200**  
+  The distribution narrows into a more recognizable bell shape. Zero is still within the main cluster of data, though it’s no longer centered; chance alone can still yield an estimate near zero, but it’s less common.
+
+- **n = 500**  
+  The spread is noticeably tighter (most simulations land within ±2%). Zero now sits closer to the edge of the distribution’s bulk, so a study of this size would often reject the hypothesis of no effect.
+
+- **n = 1,000**  
+  The curve is sharply peaked and almost perfectly normal. Zero appears far in the left tail; only a small fraction of the 1,000 simulations drift that low. It becomes rare at this sample size to confuse the genuine effect with zero.
+
+
+Taken together, these snapshots illustrate the Central Limit Theore*: as sample size grows, the distribution of the differences becomes more bell-shaped, and its variance shrinks. Consequently, unlikely values like zero are pushed into the tails, making the true 0.4 percentage-point effect more evident in larger samples.
+
+
+## Conclusion
+This replication confirms Karlan & List’s core finding: simply telling potential donors their gift will be matched significantly increases participation, while moving from a 1:1 to a 2:1 or 3:1 match does not boost response further or affect average gift size. Randomization checks confirm the treatment and control groups are balanced, so the observed 0.4-percentage-point (≈22%) lift in response rate can be causally linked to the match offer. Probit, linear models, and pairwise t-tests all closely mirror the original paper’s results. The rise in revenue per letter stems mainly from converting more donors, rather than increasing average donation amounts—aligning with the authors’ “figures suggest” observation.
+
+Simulations of Bernoulli draws illustrate why these conclusions hold: the Law of Large Numbers drives the sample difference toward the true 0.004 effect, and the Central Limit Theorem shows that, with adequate sample size, zero falls to the tails of the sampling distribution. For practitioners, the lesson is straightforward: a one-for-one match captures nearly the full behavioral benefit at minimal cost, indicating that additional resources might be better spent recruiting new donors or targeting bigger gifts through other approaches.
+
 
 
 
