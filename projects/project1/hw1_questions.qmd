@@ -45,6 +45,7 @@ print(f"{df.shape[0]:,} observations × {df.shape[1]} variables loaded.")
 ```
 
 
+
 :::: {.callout-note collapse="true"}
 ### Variable Definitions
 

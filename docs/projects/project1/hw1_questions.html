@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Yoonjeong Park">
-<meta name="dcterms.date" content="2025-04-23">
+<meta name="dcterms.date" content="2025-05-02">
 
 <title>A Replication of Karlan and List (2007) – Yoonjeong’s Website</title>
 <style>
@@ -198,7 +198,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 23, 2025</p>
+      <p class="date">May 2, 2025</p>
     </div>
   </div>
   
@@ -532,7 +532,7 @@ Variable Definitions
 <span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>ttest</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="balance-ttest" class="cell-output cell-output-display" data-execution_count="16">
+<div id="balance-ttest" class="cell-output cell-output-display" data-execution_count="2">
 <div>
 
 
@@ -604,7 +604,7 @@ Variable Definitions
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        columns<span class="op">=</span>[<span class="st">"Coef"</span>,<span class="st">"t-stat"</span>], index<span class="op">=</span>[<span class="st">"hpa"</span>,<span class="st">"mrm2"</span>,<span class="st">"freq"</span>,<span class="st">"female"</span>]).<span class="bu">round</span>(<span class="dv">2</span>)</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="balance-reg" class="cell-output cell-output-display" data-execution_count="17">
+<div id="balance-reg" class="cell-output cell-output-display" data-execution_count="3">
 <div>
 
 
@@ -701,7 +701,7 @@ Variable Definitions
 <span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="donate-stats" class="cell-output cell-output-display" data-execution_count="19">
+<div id="donate-stats" class="cell-output cell-output-display" data-execution_count="5">
 <div>
 
 
@@ -752,7 +752,7 @@ Variable Definitions
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>ame <span class="op">=</span> probit_mod.get_margeff(at<span class="op">=</span><span class="st">"overall"</span>).summary_frame()</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>ame.<span class="bu">round</span>(<span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="donate-probit-ame" class="cell-output cell-output-display" data-execution_count="20">
+<div id="donate-probit-ame" class="cell-output cell-output-display" data-execution_count="6">
 <div>
 
 
@@ -792,7 +792,7 @@ Variable Definitions
 <p>Next, I explore how different match ratios—1:1, 2:1, and 3:1—affect donor response rates.</p>
 <p>So far, I’ve grouped all match offers together. In reality, donors received three distinct “price discounts,” so the natural question is whether a higher match multiplier translates into higher participation.</p>
 <div class="cell" data-execution_count="7">
-<div id="ratio-rate" class="cell-output cell-output-display" data-execution_count="21">
+<div id="ratio-rate" class="cell-output cell-output-display" data-execution_count="7">
 <div>
 
 
@@ -855,7 +855,7 @@ Variable Definitions
 <span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>reg <span class="op">=</span> smf.ols(<span class="st">"gave ~ ratio1 + ratio2 + ratio3 - 1"</span>, data<span class="op">=</span>mt).fit()</span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>reg.summary2().tables[<span class="dv">1</span>].<span class="bu">round</span>(<span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="ratio-reg" class="cell-output cell-output-display" data-execution_count="22">
+<div id="ratio-reg" class="cell-output cell-output-display" data-execution_count="8">
 <div>
 
 
@@ -945,7 +945,7 @@ Variable Definitions
 <span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Difference (pp) from reg"</span>: reg_diff.<span class="bu">round</span>(<span class="dv">2</span>)</span>
 <span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="ratio-diff" class="cell-output cell-output-display" data-execution_count="23">
+<div id="ratio-diff" class="cell-output cell-output-display" data-execution_count="9">
 <div>
 
 
@@ -1012,7 +1012,7 @@ Variable Definitions
 <span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"p-value"</span>: [<span class="bu">round</span>(p_val, <span class="dv">3</span>)]</span>
 <span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="amt-uncond" class="cell-output cell-output-display" data-execution_count="24">
+<div id="amt-uncond" class="cell-output cell-output-display" data-execution_count="10">
 <div>
 
 
@@ -1061,7 +1061,7 @@ Variable Definitions
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"p-value"</span>: [<span class="bu">round</span>(ols_con.pvalues[<span class="st">'treatment'</span>], <span class="dv">3</span>)]</span>
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="amt-cond" class="cell-output cell-output-display" data-execution_count="25">
+<div id="amt-cond" class="cell-output cell-output-display" data-execution_count="11">
 <div>
 
 
