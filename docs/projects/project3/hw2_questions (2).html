@@ -296,7 +296,7 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hw2_questions_files/figure-html/comparing-patent-output-output-1.png" id="comparing-patent-output" width="593" height="376" class="figure-img"></p>
+<p><img src="hw2_questions (2)_files/figure-html/comparing-patent-output-output-1.png" id="comparing-patent-output" width="593" height="376" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -349,7 +349,7 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hw2_questions_files/figure-html/region-age-summary-output-1.png" id="region-age-summary" width="661" height="372" class="figure-img"></p>
+<p><img src="hw2_questions (2)_files/figure-html/region-age-summary-output-1.png" id="region-age-summary" width="661" height="372" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -388,7 +388,7 @@ window.Quarto = {
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hw2_questions_files/figure-html/age-dist-output-1.png" id="age-dist" width="593" height="376" class="figure-img"></p>
+<p><img src="hw2_questions (2)_files/figure-html/age-dist-output-1.png" id="age-dist" width="593" height="376" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -463,7 +463,7 @@ f(Y_i\mid\lambda)
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hw2_questions_files/figure-html/pois-like-plot-output-1.png" id="pois-like-plot" width="565" height="372" class="figure-img"></p>
+<p><img src="hw2_questions (2)_files/figure-html/pois-like-plot-output-1.png" id="pois-like-plot" width="565" height="372" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -631,7 +631,7 @@ BFGS also returns an approximation to the inverse Hessian, which we use as an es
 <span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="pois-reg-mle" class="cell-output cell-output-display" data-execution_count="10">
+<div id="pois-reg-mle" class="cell-output cell-output-display" data-execution_count="280">
 <div>
 
 
@@ -725,7 +725,7 @@ All point estimates are small (±3 %) and their standard errors are of similar m
 <span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>glm_table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="pois-reg-glm" class="cell-output cell-output-display" data-execution_count="11">
+<div id="pois-reg-glm" class="cell-output cell-output-display" data-execution_count="281">
 <div>
 
 
@@ -816,6 +816,7 @@ All t-values sit near 1, so none is statistically different from the Midwest bas
 The intercept (–0.15) translates to ((-0.15) ≈ 0.86) patents over five years for a young Midwest firm that has not licensed Blueprinty.</p></li>
 </ul>
 <p>Age dynamics and Blueprinty adoption drive most of the variation in patent output; regional location does not. For strategy, focus on signing up mid-career firms (~20–30 years old) — they sit at the productivity sweet spot and stand to gain a 20 % boost in patenting by adopting Blueprinty.</p>
+<p><em>todo: What do you conclude about the effect of Blueprinty’s software on patent success? Because the beta coefficients are not directly interpretable, it may help to create two fake datasets: X_0 and X_1 where X_0 is the X data but with iscustomer=0 for every observation and X_1 is the X data but with iscustomer=1 for every observation. Then, use X_0 and your fitted model to get the vector of predicted number of patents (y_pred_0) for every firm in the dataset, and use X_1 to get Y_pred_1 for every firm. Then subtract y_pred_1 minus y_pred_0 and take the average of that vector of differences.</em></p>
 </section>
 <section id="conclusion-about-the-effect-of-blueprintys-sofrware-on-patent-success" class="level4">
 <h4 class="anchored" data-anchor-id="conclusion-about-the-effect-of-blueprintys-sofrware-on-patent-success">3.4 Conclusion about the effect of Blueprinty’s sofrware on patent success</h4>
@@ -908,7 +909,7 @@ The intercept (–0.15) translates to ((-0.15) ≈ 0.86) patents over five years
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hw2_questions_files/figure-html/missings-output-1.png" id="missings" width="566" height="372" class="figure-img"></p>
+<p><img src="hw2_questions (2)_files/figure-html/missings-output-1.png" id="missings" width="566" height="372" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -1007,7 +1008,7 @@ The intercept (–0.15) translates to ((-0.15) ≈ 0.86) patents over five years
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="hw2_questions_files/figure-html/eda-clean-output-1.png" id="eda-clean" width="949" height="564" class="figure-img"></p>
+<p><img src="hw2_questions (2)_files/figure-html/eda-clean-output-1.png" id="eda-clean" width="949" height="564" class="figure-img"></p>
 </figure>
 </div>
 </div>
@@ -1046,7 +1047,7 @@ We encode those insights in a log-linear Poisson model:</p>
 + \boldsymbol\beta_6^\top \!\text{room dummies}
 \bigr)
 \]\]</span></p>
-<div id="aa20ef6c" class="cell" data-execution_count="17">
+<div id="c99d3d90" class="cell" data-execution_count="17">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> air_cln.copy()</span>
@@ -1077,7 +1078,7 @@ We encode those insights in a log-linear Poisson model:</p>
 <span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">round</span>(<span class="dv">4</span>)</span>
 <span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>coef_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div id="airbnb-model" class="cell-output cell-output-display" data-execution_count="18">
+<div id="airbnb-model" class="cell-output cell-output-display" data-execution_count="288">
 <div>
 
 
