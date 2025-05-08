@@ -555,7 +555,7 @@ BFGS also returns an approximation to the inverse Hessian, which we use as an es
 <span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="pois-reg-mle" class="cell-output cell-output-display" data-execution_count="82">
+<div id="pois-reg-mle" class="cell-output cell-output-display" data-execution_count="10">
 <div>
 
 
@@ -649,7 +649,7 @@ All point estimates are small (±3 %) and their standard errors are of similar m
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>glm_table</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="pois-reg-glm" class="cell-output cell-output-display" data-execution_count="83">
+<div id="pois-reg-glm" class="cell-output cell-output-display" data-execution_count="11">
 <div>
 
 
@@ -958,8 +958,7 @@ A clear upward cloud: listings live longer tend to accumulate more reviews, but 
 <h3 class="anchored" data-anchor-id="poisson-regression">Poisson regression</h3>
 <p>Our plots suggest that review counts grow with listing age, fall with price, and differ by room type and review scores.<br>
 We encode those insights in a log-linear Poisson model:</p>
-<p><span class="math display">\[[
-\text{E[reviews]} \;=\;
+<p><span class="math display">\[text{E[reviews]} \;=\;
 \exp\!\bigl(
 \beta_0
 + \beta_1 \,\text{months\_listed}
@@ -968,9 +967,8 @@ We encode those insights in a log-linear Poisson model:</p>
 + \beta_4 \,\text{bedrooms}
 + \boldsymbol\beta_5^\top \!\text{scores}
 + \boldsymbol\beta_6^\top \!\text{room dummies}
-\bigr)
-\]\]</span></p>
-<div id="d66a1936" class="cell" data-execution_count="17">
+\bigr)\]</span></p>
+<div id="f759c7ea" class="cell" data-execution_count="17">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> air_cln.copy()</span>
@@ -1001,7 +999,7 @@ We encode those insights in a log-linear Poisson model:</p>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">round</span>(<span class="dv">4</span>)</span>
 <span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>coef_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div id="airbnb-model" class="cell-output cell-output-display" data-execution_count="90">
+<div id="airbnb-model" class="cell-output cell-output-display" data-execution_count="18">
 <div>
 
 
