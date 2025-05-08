@@ -39,9 +39,11 @@ df.head()
 ```
 
 #### 1.1 Comparing Patent Output
+ 
 ```{python}
 #| label: Comparing Patent Output
 #| code-fold: true
+#| echo: false
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -95,39 +97,31 @@ The distribution of number of patents shows a clear picture:
 
 Blueprinty customers are not selected at random. It may be important to account for systematic differences in the age and regional location of customers vs non-customers.
 
-#### 1.2 How are customers spread across regionss?
+#### 1.2 How are customers spread across regions?
 ```{python}
-#| label: region-age-summary
-#| code-fold: true
-#| code-summary: "Show code"
+#| label: plot-patent-dist
+#| echo: false
+bins = np.arange(df["patents"].min(), df["patents"].max() + 1)
 
-import pandas as pd
-import matplotlib.pyplot as plt
-
-region_counts = (
-    df
-    .groupby(['iscustomer', 'region'])
-    .size()
-    .unstack(fill_value=0)                    # rows → status, cols → region
-    .rename(index={0: 'Non-customer', 1: 'Customer'})
+counts = (
+    df.groupby(["patents", "iscustomer"]).size()
+      .unstack(fill_value=0)              
+      .reindex(bins)                          
+      .rename(columns={0: "Non-customer", 1: "Customer"})
 )
 
-# ── make sure the rows are in the order we want ────────────────
-region_counts_reordered = region_counts.loc[['Customer', 'Non-customer']]
+fig, ax = plt.subplots(figsize=(7, 4))
+width = 0.4
 
-# ── grouped bar chart (not stacked) ────────────────────────────
-ax = region_counts_reordered.T.plot(
-    kind='bar',
-    figsize=(7, 4),
-    width=0.75,                       # a touch wider than default
-    color=['#6CA0DC', '#B19CD9']      # Customer = blue, Non-customer = purple
-)
+ax.bar(bins - width/2, counts["Customer"],     width, color=BLUE,   label="Customer")
+ax.bar(bins + width/2, counts["Non-customer"], width, color=PURPLE, label="Non-customer")
 
-plt.xlabel('Region')
-plt.ylabel('Number of firms')
-plt.title('Distribution of Regions by Customer Status')
-plt.xticks(rotation=0)
-plt.legend(title='Status')
+ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+ax.set_xlabel("Number of patents")
+ax.set_ylabel("Count")
+ax.set_title("Distribution of Number of Patents")
+ax.legend(frameon=False)
 plt.tight_layout()
 plt.show()
 ```
