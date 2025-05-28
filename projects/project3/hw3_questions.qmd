@@ -1,0 +1,539 @@
+---
+title: "Multinomial Logit Model"
+author: "Yoonjeong Park"
+date: today
+---
+
+This assignment expores two methods for estimating the MNL model: (1) via Maximum Likelihood, and (2) via a Bayesian approach using a Metropolis-Hastings MCMC algorithm. 
+
+## 1. Likelihood for the Multi-nomial Logit (MNL) Model
+
+Suppose we have $i=1,\ldots,n$ consumers who each select exactly one product $j$ from a set of $J$ products. The outcome variable is the identity of the product chosen $y_i \in \{1, \ldots, J\}$ or equivalently a vector of $J-1$ zeros and $1$ one, where the $1$ indicates the selected product. For example, if the third product was chosen out of 3 products, then either $y=3$ or $y=(0,0,1)$ depending on how we want to represent it. Suppose also that we have a vector of data on each product $x_j$ (eg, brand, price, etc.). 
+
+We model the consumer's decision as the selection of the product that provides the most utility, and we'll specify the utility function as a linear function of the product characteristics:
+
+$$ U_{ij} = x_j'\beta + \epsilon_{ij} $$
+
+where $\epsilon_{ij}$ is an i.i.d. extreme value error term. 
+
+The choice of the i.i.d. extreme value error term leads to a closed-form expression for the probability that consumer $i$ chooses product $j$:
+
+$$ \mathbb{P}_i(j) = \frac{e^{x_j'\beta}}{\sum_{k=1}^Je^{x_k'\beta}} $$
+
+For example, if there are 3 products, the probability that consumer $i$ chooses product 3 is:
+
+$$ \mathbb{P}_i(3) = \frac{e^{x_3'\beta}}{e^{x_1'\beta} + e^{x_2'\beta} + e^{x_3'\beta}} $$
+
+A clever way to write the individual likelihood function for consumer $i$ is the product of the $J$ probabilities, each raised to the power of an indicator variable ($\delta_{ij}$) that indicates the chosen product:
+
+$$ L_i(\beta) = \prod_{j=1}^J \mathbb{P}_i(j)^{\delta_{ij}} = \mathbb{P}_i(1)^{\delta_{i1}} \times \ldots \times \mathbb{P}_i(J)^{\delta_{iJ}}$$
+
+Notice that if the consumer selected product $j=3$, then $\delta_{i3}=1$ while $\delta_{i1}=\delta_{i2}=0$ and the likelihood is:
+
+$$ L_i(\beta) = \mathbb{P}_i(1)^0 \times \mathbb{P}_i(2)^0 \times \mathbb{P}_i(3)^1 = \mathbb{P}_i(3) = \frac{e^{x_3'\beta}}{\sum_{k=1}^3e^{x_k'\beta}} $$
+
+The joint likelihood (across all consumers) is the product of the $n$ individual likelihoods:
+
+$$ L_n(\beta) = \prod_{i=1}^n L_i(\beta) = \prod_{i=1}^n \prod_{j=1}^J \mathbb{P}_i(j)^{\delta_{ij}} $$
+
+And the joint log-likelihood function is:
+
+$$ \ell_n(\beta) = \sum_{i=1}^n \sum_{j=1}^J \delta_{ij} \log(\mathbb{P}_i(j)) $$
+
+
+## 2. Simulate Conjoint Data
+
+We will simulate data from a conjoint experiment about video content streaming services. We elect to simulate 100 respondents, each completing 10 choice tasks, where they choose from three alternatives per task. For simplicity, there is not a "no choice" option; each simulated respondent must select one of the 3 alternatives. 
+
+Each alternative is a hypothetical streaming offer consistent of three attributes: (1) brand is either Netflix, Amazon Prime, or Hulu; (2) ads can either be part of the experience, or it can be ad-free, and (3) price per month ranges from \$4 to \$32 in increments of \$4.
+
+The part-worths (ie, preference weights or beta parameters) for the attribute levels will be 1.0 for Netflix, 0.5 for Amazon Prime (with 0 for Hulu as the reference brand); -0.8 for included adverstisements (0 for ad-free); and -0.1*price so that utility to consumer $i$ for hypothethical streaming service $j$ is 
+
+$$
+u_{ij} = (1 \times Netflix_j) + (0.5 \times Prime_j) + (-0.8*Ads_j) - 0.1\times Price_j + \varepsilon_{ij}
+$$
+
+where the variables are binary indicators and $\varepsilon$ is Type 1 Extreme Value (ie, Gumble) distributed.
+
+The following code provides the simulation of the conjoint data.
+
+```{python}
+#| label: Simulation of the conjoint data
+#| code-fold: true
+#| code-summary: "Simulation of the conjoint data"
+import numpy as np
+import pandas as pd
+from itertools import product
+
+RNG_SEED   = 123
+BRAND      = np.array(["N", "P", "H"])           
+AD         = np.array(["Yes", "No"])
+PRICE      = np.arange(8, 33, 4)                 
+BETA_BRAND = {"N": 1.0, "P": 0.5, "H": 0.0}
+BETA_AD    = {"Yes": -0.8, "No": 0.0}
+BETA_PRICE = lambda p: -0.1 * p                  
+
+N_PEEPS = 100
+N_TASKS = 10
+N_ALTS  = 3
+
+rng = np.random.default_rng(RNG_SEED)
+
+profiles = pd.DataFrame(
+    product(BRAND, AD, PRICE),        
+    columns=["brand", "ad", "price"]
+)
+M = len(profiles)
+
+def simulate_respondent(pid: int) -> pd.DataFrame:
+    rows = []
+    for t in range(1, N_TASKS + 1):
+
+        # draw 3 random alternatives for this task
+        idx = rng.choice(M, size=N_ALTS, replace=False)
+        dat = profiles.iloc[idx].copy()
+        dat.insert(0, "task", t)
+        dat.insert(0, "resp", pid)
+
+        # deterministic utility
+        v = (
+            dat["brand"].map(BETA_BRAND).to_numpy() +
+            dat["ad"].map(BETA_AD).to_numpy() +
+            BETA_PRICE(dat["price"].to_numpy())
+        )
+        # Gumbel noise: –log(–log(U))
+        e = -np.log(-np.log(rng.random(N_ALTS)))
+
+        u = v + e
+        choice = (u == u.max()).astype(int)   # 1 for chosen alt, else 0
+
+        dat["choice"] = choice
+        rows.append(dat)
+
+    return pd.concat(rows, ignore_index=True)
+
+conjoint_data = pd.concat(
+    [simulate_respondent(pid) for pid in range(1, N_PEEPS + 1)],
+    ignore_index=True
+)
+
+conjoint_data = conjoint_data[["resp", "task", "brand", "ad", "price", "choice"]]
+
+print(conjoint_data.head())
+```
+
+## 3. Preparing the Data for Estimation
+
+Before we can estimate the multinomial-logit model, we have to turn our
+“long” table from Section 2 into the 3-D format the likelihood needs:
+one slice per choice task, three rows (one per alternative), and four
+columns for the attributes.
+
+We keep the process simple and transparent:
+
+1. **Label each alternative.** Within every task we tag the three
+   rows as 1, 2, and 3.
+2. **Create dummies.** We one-hot-encode *brand* and *ads*, using **Hulu**
+   and **ad-free** as reference levels.
+3. **Build the design matrix.** The final feature set is  
+   \[`brand_N`, `brand_P`, `ads`, `price`\].
+4. **Reshape.** We fold the long matrix into a
+   `n_tasks × 3 × 4` tensor **`X`** and a matching choice indicator
+   **`Y`** with one “1” per row.
+
+```{python}
+#| label: data-prep
+#| echo: true
+#| code-fold: true
+#| code-summary: "Click to view the data preparation code"
+import pandas as pd
+import numpy as np
+from pathlib import Path
+
+csv_path = Path("/Users/yoonjeong_park/mysite/_data/conjoint_data.csv")
+if csv_path.exists():
+    conjoint_data = pd.read_csv(csv_path)
+else:                                  # still in memory if run sequentially
+    from __main__ import conjoint_data
+
+conjoint_data = (
+    conjoint_data
+    .sort_values(["resp", "task"])
+    .reset_index(drop=True)
+)
+
+conjoint_data["alt"] = (
+    conjoint_data
+    .groupby(["resp", "task"])
+    .cumcount() + 1
+)
+
+dat_long = (
+    pd.get_dummies(
+        conjoint_data,
+        columns=["brand", "ad"],
+        drop_first=True                 # drops Hulu & ad-free
+    )
+    .rename(columns={"ad_Yes": "ads"})
+)
+
+FEATURES = ["brand_N", "brand_P", "ads", "price"]
+J = 3                                   # alternatives
+K = len(FEATURES)
+
+X_long = dat_long[FEATURES].to_numpy()
+y_long = dat_long["choice"].to_numpy()
+
+N_obs = len(X_long) // J                
+
+X = X_long.reshape(N_obs, J, K)          # (1000, 3, 4)
+Y = y_long.reshape(N_obs, J)             # (1000, 3)
+
+print("X shape:", X.shape, "| Y shape:", Y.shape)
+```
+
+
+
+## 4. Estimation via Maximum Likelihood
+With the data in 3-D array form, we can now recover the preference
+weights that generated the choices.  We maximise the log-likelihood of
+the multinomial-logit model and rely on the **BFGS** routine in
+`scipy.optimize`, which also gives us an approximation to the inverse
+Hessian—the key to standard errors and confidence intervals.
+
+### 4.1  Log-likelihood function  
+For each task we turn β and the attribute matrix into utilities,
+convert those utilities into choice probabilities, and add up the log
+probabilities of the actually chosen alternatives.
+
+### 4.2  Numerical maximisation and inference  
+We start the optimiser at zero (a neutral prior) and let BFGS iterate
+until convergence.  The inverse Hessian at the optimum is an estimate of
+the variance–covariance matrix; its square roots are the standard
+errors.  A normal approximation then furnishes the 95 per cent
+confidence bands.
+
+```{python}
+#| label: mnl-mle
+#| echo: true
+#| code-fold: true
+#| code-summary: "Click to view the MLE code"
+import numpy as np
+import pandas as pd
+from scipy import optimize
+
+# Log likelihood
+def loglik_mnl(beta, X, Y):
+    """
+    Multinomial-logit log-likelihood.
+
+    Parameters
+    ----------
+    beta : (K,) array
+        Parameter vector.
+    X    : (N, J, K) array
+        Attribute tensor.
+    Y    : (N, J) array
+        0/1 choice indicators.
+    """
+    util = X @ beta                    
+    util -= util.max(axis=1, keepdims=True) 
+    expu = np.exp(util)
+    probs = expu / expu.sum(axis=1, keepdims=True)
+    return (Y * np.log(probs + 1e-15)).sum()
+
+# Negative version for minimisation
+neg_ll = lambda b, X, Y: -loglik_mnl(b, X, Y)
+
+# Optimise
+K = X.shape[2]
+beta0 = np.zeros(K)                     
+
+result = optimize.minimize(
+    neg_ll,
+    beta0,
+    args=(X, Y),
+    method="BFGS",
+    options={"disp": False}
+)
+
+beta_hat = result.x
+vcov_hat = result.hess_inv               
+se_hat   = np.sqrt(np.diag(vcov_hat))
+
+ci_low  = beta_hat - 1.96 * se_hat
+ci_high = beta_hat + 1.96 * se_hat
+
+summary = pd.DataFrame(
+    {
+        "Estimate":   beta_hat,
+        "Std. Error": se_hat,
+        "CI Lower":   ci_low,
+        "CI Upper":   ci_high,
+    },
+    index=["β_Netflix", "β_Prime", "β_Ads", "β_Price"]
+).round(3)
+
+summary
+```
+
+As we can see in the table above, all four coefficients come out with the **expected signs** and narrow
+confidence intervals that exclude zero:
+
+* **Brand effects.** Netflix enjoys the largest lift in perceived
+  utility ( β̂ ≈ 0.94 ), followed by Prime ( β̂ ≈ 0.50 ); both are
+  positive relative to the reference brand Hulu.  Translating the
+  Netflix coefficient into dollars using the price slope
+  ( -0.099 ) suggests respondents are willing to pay roughly  
+  \(\frac{0.94}{0.099} \approx \$9.5\) more per month for Netflix over
+  Hulu, all else equal.
+
+* **Advertising penalty.** Showing ads lowers utility by about 0.73
+  units.  In price terms, that is equivalent to a discount of  
+  \(\frac{0.73}{0.099} \approx \$7.4\) per month to compensate for ads.
+
+* **Price sensitivity.** Each additional dollar of monthly fee reduces
+  utility by 0.099, matching the –0.10 value we embedded in the
+  simulation almost exactly.
+
+Because the true part-worths we fed into the data generator were  
+(1.0, 0.5, -0.8, -0.1), the maximum-likelihood estimates land well
+within a **few hundredths** of those targets.  That tight recovery, plus
+the small standard errors, gives us confidence that both the data
+reshaping and the optimisation routine are working properly.
+
+From a managerial perspective, these estimates quantify clear **trade-offs**:
+customers place a premium on the Netflix brand that is about \$2 higher
+than the surcharge they would accept for an ad-free experience, and price
+cuts of roughly \$1 can offset either a switch from Netflix to Hulu or
+the introduction of ads. 
+
+
+## 5. Estimation via Bayesian Methods
+The maximum-likelihood results give us a single *best* set of part-worths.
+A Bayesian view goes further: it treats the four betas as random
+variables and describes our uncertainty through their **posterior
+distribution**.  We explore that distribution with a Metropolis-Hastings
+(MH) sampler.
+
+
+| Piece | What we assume | In one line |
+|-------|----------------|-------------|
+| **Prior** | Each coefficient starts with a Normal prior centred at&nbsp;0.  <br>• Brand & ads betas: variance = 5  <br>• Price beta: variance = 1 |  β<sub>1:3</sub> ∼ 𝒩(0, 5) <br> β<sub>price</sub> ∼ 𝒩(0, 1) |
+| **Proposal step** | We take a *random-walk* move by adding a small normal “jitter.”  | β<sup>new</sup> = β<sup>old</sup> + ε,  ε ∼ 𝒩(0, diag 0.05, 0.05, 0.05, 0.005) |
+| **Log-posterior** | Posterior ∝ Likelihood × Prior, so in log-space it's a simple sum. |  log p(β | data) = log L(β) + log p(β) |
+
+Working in log-space lets us re-use the `loglik_mnl()` function from
+Section 4 and sidesteps numerical underflow.
+
+I have ran 11,000, discarded the first 1,000 as burn-in and retain 10,000 draws for inference.
+
+```{python}
+#| label: mh-sampler
+#| echo: true
+#| code-fold: true
+#| code-summary: "Click to view the MH code"
+
+# Log prior
+def log_prior(beta):
+    # beta[0:3] ~ N(0,5)    → σ² = 5
+    lp_bin  = -0.5*np.sum(beta[:3]**2 / 5) - 3*0.5*np.log(2*np.pi*5)
+    # beta[3]   ~ N(0,1)
+    lp_price = -0.5*(beta[3]**2)          - 0.5*np.log(2*np.pi)
+    return lp_bin + lp_price
+
+# Log posterior
+def log_posterior(beta, X, Y):
+    return loglik_mnl(beta, X, Y) + log_prior(beta)
+
+# Metropolis Hastings sampler
+def run_mh(init, n_iter, X, Y, prop_var):
+    K        = len(init)
+    chain    = np.zeros((n_iter, K))
+    chain[0] = init
+    log_post = log_posterior(init, X, Y)
+
+    accept = 0
+    for t in range(1, n_iter):
+        # proposal
+        step   = np.random.normal(0, np.sqrt(prop_var), size=K)
+        cand   = chain[t-1] + step
+        log_p  = log_posterior(cand, X, Y)
+
+        # acceptance probability
+        if np.log(np.random.rand()) < (log_p - log_post):
+            chain[t] = cand
+            log_post = log_p
+            accept  += 1
+        else:
+            chain[t] = chain[t-1]
+
+    acc_rate = accept / (n_iter - 1)
+    return chain, acc_rate
+
+
+# Run the sampler
+PROP_VAR = np.array([0.05, 0.05, 0.05, 0.005])
+N_ITER   = 11_000
+BURN_IN  = 1_000
+
+beta_start = np.zeros(4)               
+mh_chain, acc_rate = run_mh(beta_start, N_ITER, X, Y, PROP_VAR)
+posterior_draws    = mh_chain[BURN_IN:] 
+
+print(f"Acceptance rate: {acc_rate:.2%}")
+```
+
+Even with the low acceptance rate the sampler does move, so we first
+check the draw for **β<sub>Netflix</sub>**.  A healthy trace should look
+like a thick, fuzzy band without long flat stretches, and the histogram
+should resemble a smooth bell.
+
+```{python}
+#| label: trace-hist-netflix
+#| echo: true
+#| fig-width: 8
+#| fig-height: 4
+#| code-fold: true
+#| code-summary: "Click to view the histogram code"
+import matplotlib.pyplot as plt
+
+beta_net = posterior_draws[:, 0]  # column 0 = Netflix
+
+fig, ax = plt.subplots(2, 1, figsize=(8, 3.5), sharex=False)
+
+light_purple = "#B19CD9"
+
+# Trace plot
+ax[0].plot(beta_net, lw=0.4, color=light_purple)
+ax[0].set_title("Trace plot – β_Netflix")
+ax[0].set_ylabel("value")
+
+# Posterior histogram
+ax[1].hist(beta_net, bins=40, density=True, alpha=0.8, color=light_purple)
+ax[1].axvline(beta_net.mean(), ls="--", label="posterior mean", color="black")
+ax[1].set_title("Posterior density – β_Netflix")
+ax[1].set_xlabel("value")
+ax[1].legend()
+
+plt.tight_layout(pad=1.0)
+```
+
+The figure confirms that, despite the low acceptance rate, the chain for
+**β<sub>Netflix</sub>** behaves well:
+
+* **Trace plot.**  After the first few hundred draws the line settles
+  into a steady band between roughly 0.8 and 1.1 with no long‐run drift,
+  indicating that the chain is sampling from one stable region of the
+  posterior.
+
+* **Histogram.**  The density is unimodal and roughly symmetric around
+  **≈ 0.95**.  The spread (≈ ±0.12) is almost identical to the standard
+  error we saw under maximum likelihood, suggesting that the vague
+  prior is not distorting the likelihood information.
+
+Overall, the chain provides a credible estimate that aligns closely with
+our MLE result (0.94) and the true data-generating value (1.0).  We can
+therefore move on to summarising all four parameters.
+
+Below I have list the posterior means, standard deviations, and 95 % credible
+intervals for all four betas, side-by-side with the frequentist results.
+
+```{python}
+#| label: bayes-summary
+#| echo: true
+#| code-fold: true
+#| code-summary: "Click to view the posterior summary code"
+
+post_means = posterior_draws.mean(axis=0)
+post_sds   = posterior_draws.std(axis=0)
+ci_low, ci_high = np.percentile(posterior_draws, [2.5, 97.5], axis=0)
+
+post_summary = pd.DataFrame(
+    {
+        "Post. Mean": post_means,
+        "Post. SD"  : post_sds,
+        "CI Lower"  : ci_low,
+        "CI Upper"  : ci_high,
+    },
+    index=["β_Netflix", "β_Prime", "β_Ads", "β_Price"]
+).round(3)
+
+# Combine with earlier MLE table (assumed name 'summary')
+comparison = post_summary.join(
+    summary[["Estimate", "Std. Error"]],
+    how="left"
+).rename(columns={"Estimate": "MLE", "Std. Error": "MLE SE"})
+```
+
+|                | Post. Mean | MLE | Gap |
+|----------------|-----------:|----:|----:|
+| β_Netflix      | 0.946 | 0.941 | +0.005 |
+| β_Prime        | 0.504 | 0.502 | +0.002 |
+| β_Ads          |-0.717 |-0.732 | -0.015 |
+| β_Price        |-0.100 |-0.099 | -0.001 |
+
+* **Near-identical point estimates.**  
+  The largest distance between the two approaches is 0.015, well inside
+  one posterior standard deviation.  In practice the Bayesian and MLE
+  numbers would lead to identical business decisions.
+
+* **Interval overlap.**  
+  Every posterior 95 % credible interval fully contains the MLE point
+  estimate and vice-versa, reinforcing the consistency of the two
+  perspectives.
+
+* **Managerial takeaway.**  
+  Whichever toolbox we pick, the message is unchanged: Netflix commands a
+  ≈ \$9 premium over Hulu, Prime about half that, ads cost roughly \$7 in
+  consumer utility, and price sensitivity sits at –0.10 per dollar.
+
+This closes the Bayesian section and confirms that both estimation
+routes give a coherent, actionable view of customer preferences.
+
+
+## 6. Discussion
+If we have received this dataset from an actual survey, without knowing the
+“true” coefficients, our take-aways would be:
+
+* **Netflix vs. Prime.**  
+  The positive sign for both brand coefficients tells us that customers
+  value either subscription more than the baseline (Hulu).  
+  Because **β_Netflix > β_Prime** the lift in utility is larger for
+  Netflix, meaning respondents are, on average, willing to pay a premium
+  for Netflix over Prime once ads and price are held constant.
+
+* **Price sensitivity.**  
+  The negative **β_price** is exactly what economic theory (and common
+  sense) predicts: higher prices lower utility, making a product less
+  likely to be chosen.  The magnitude (≈ −0.10) converts directly into
+  willingness-to-pay: a one-unit gain in utility is worth roughly \$10 a
+  month to the average respondent.
+
+These signs and relative magnitudes would look perfectly reasonable to a
+manager analysing real conjoint results.
+
+
+Real-world conjoint studies rarely assume that all consumers share the
+same part-worths.  A hierarchical or “random-parameter” MNL lets each
+person have their own coefficients while still borrowing strength across
+the sample.
+
+* **Simulation change.**  
+  Instead of one global β vector we would first draw a respondent-level
+  vector βᵢ ∼ 𝒩(μ, Σ), i = 1,…,n, and then generate that person’s
+  choices using βᵢ.  The hyper-parameters (μ, Σ) control the average
+  preferences and the amount of heterogeneity.
+
+* **Estimation change.**  
+  In a Bayesian setting we add a second layer of priors for
+  (μ, Σ) and sample the full joint posterior, typically via
+  Gibbs or Hamiltonian MCMC.  In a frequentist workflow we would switch
+  to simulated maximum likelihood or use tools like hierarchical
+  Bayes, with either approach integrating over the respondent-specific
+  random effects.  The likelihood is no longer closed-form, but modern
+  software makes the computation tractable.
+
+The payoff is a richer set of insights: not only the average part-worths
+but also how preferences vary across the market, which is essential for
+segmentation, targeted pricing, and share-of-wallet simulations.
