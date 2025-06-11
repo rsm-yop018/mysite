@@ -1,0 +1,694 @@
+---
+title: "K-Means and K-Nearest Neighbors"
+author: "Yoonjeong Park"
+date: today
+---
+
+
+
+## K-Means
+**What problem does K-Means solve?**  
+Imagine walking into an unfamiliar supermarket and wanting to arrange products into natural aisles without consulting a pre-defined category list. K-Means does exactly that for numeric data: it groups points so items in the same bin are closer to each other than to items in other bins.
+
+**How does the algorithm work?**
+
+1. **Pick *K*** — the desired number of bins (aisles, clusters).  
+2. **Drop random centroids** — initial “aisle markers.”  
+3. **Assign** every data point to the nearest centroid.  
+4. **Update** each centroid to the mean of its assigned points.  
+5. **Repeat 3–4** until centroids hardly move.
+
+The beauty is its *simplicity*: two distance calculations (assign & update) loop until the system relaxes.
+
+**Good to know before we build our own code to implement the k-means algorithm**
+
+* **Scale matters.** Features measured in wildly different units will hijack the distance metric, so we’ll standardise first.  
+* **Initialization is random.** Different starting points can yield slightly different results; we’ll fix a seed for reproducibility and later compare to scikit-learn’s implementation.  
+* **Choosing *K* is an art and a science.** We’ll lean on two heuristics — the elbow (WCSS) and silhouette scores — to let the data, not our eyeballs, nominate a sensible value.
+
+With that mental model in place, let’s first see how the penguin dataset looks like.
+
+| Variable | Unit / Levels | What it Captures |
+|----------|---------------|------------------|
+| `species` | *Adelie · Chinstrap · Gentoo* | Ground-truth label of the bird’s taxonomic group; **not** used in clustering (kept only for a later sanity-check plot). |
+| `island` | *Biscoe · Dream · Torgersen* | Capture location within the Palmer Archipelago; a rough habitat proxy (ignored in the 2-D K-Means demo). |
+| `bill_length_mm` | millimetres | Length of the beak tip-to-base; often linked to diet and feeding style. |
+| `bill_depth_mm` | millimetres | Thickness of the beak; complements bill length in distinguishing species. |
+| `flipper_length_mm` | millimetres | Length of the flipper (wing); proxy for swimming power and foraging range. |
+| `body_mass_g` | grams | Overall body weight; seasonal variation can reflect health or breeding stage. |
+| `sex` | *male · female* (some missing) | Biological sex; males are typically slightly larger. |
+| `year` | 2007 – 2009 | Expedition year when measurements were recorded; serves mostly as a timestamp. |
+
+
+```{python}
+#| label: load-data
+#| include: false
+#| echo: true        
+#| output: false   
+#| results: hide 
+import numpy as np
+import pandas as pd
+
+df = pd.read_csv("/Users/yoonjeong_park/mysite/_data/palmer_penguins.csv")   # adjust path if needed
+df.head()
+```
+
+Armed with just two numeric columns and a mental picture of how the algorithm should
+behave, we can now build **K-Means from scratch**.  
+
+The plan:
+
+1. Standardise *bill* and *flipper* so distance units are comparable.  
+2. Write a minimal `my_kmeans()` that alternates **assign** → **update**.  
+3. Capture each centroid hop so we can *watch* convergence.  
+4. Benchmark our labels against `sklearn.cluster.KMeans`.
+
+### Step 1 | Select & Standardise the Two Features  
+
+First we isolate **bill length** and **flipper length**, drop any rows with missing values, and standardise them so one millimetre in bill length weighs the same as one millimetre in flipper length.
+
+```{python}
+#| label: step1-scale
+#| echo: true
+#| code-fold: true
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# --- 1. load & filter ---------------------------------------------------------
+X_raw = df[["bill_length_mm", "flipper_length_mm"]].dropna().values
+
+# --- 2. standardise -----------------------------------------------------------
+scaler   = StandardScaler()
+X_std    = scaler.fit_transform(X_raw)
+
+print("Shape after dropping NAs:", X_std.shape)
+```
+
+### Step 2 | Build a K-means function
+With `X_std` now giving every penguin equal footing in distance space, the next task is to **let the points sort themselves out**.  
+That means coding the heart of K-Means, an iterative *assign → update* routine that nudges centroids until our standardised bill-and-flipper matrix settles into stable clusters.
+```{python}
+#| label: step2-impl
+#| echo: true
+#| code-fold: true
+import numpy as np
+
+def my_kmeans(X, k, max_iter=100, tol=1e-4, random_state=42, record_steps=True):
+    """
+    Lightweight, from-scratch K-Means.
+
+    Parameters
+    ----------
+    X : ndarray (n_samples × n_features)
+        Standardised feature matrix (here: bill & flipper).
+    k : int
+        Desired number of clusters.
+    max_iter : int
+        Safety cap on iterations.
+    tol : float
+        Stop when the largest centroid move is smaller than this.
+    random_state : int
+        Seed for reproducible centroid seeding.
+    record_steps : bool
+        If True, return a full history of centroid positions.
+
+    Returns
+    -------
+    labels    : ndarray, length n_samples
+        Cluster assignment for every row.
+    centroids : ndarray, shape (k, n_features)
+        Final centroid coordinates.
+    history   : list[ndarray]
+        Centroid positions after each update (len = iterations + 1).
+    """
+    rng       = np.random.default_rng(random_state)
+    centroids = X[rng.choice(len(X), size=k, replace=False)]     # ① random start
+    history   = [centroids.copy()] if record_steps else None
+
+    for _ in range(max_iter):
+        # ② assignment: send each point to its nearest centroid
+        dists  = np.linalg.norm(X[:, None] - centroids[None, :], axis=2)
+        labels = dists.argmin(axis=1)
+
+        # ③ update: recalc centroids as cluster means
+        new_centroids = np.vstack([X[labels == j].mean(axis=0) for j in range(k)])
+
+        # ④ convergence check
+        if np.linalg.norm(new_centroids - centroids, axis=1).max() < tol:
+            centroids = new_centroids
+            if record_steps: history.append(centroids.copy())
+            break
+
+        centroids = new_centroids
+        if record_steps: history.append(centroids.copy())
+
+    return labels, centroids, history
+```
+
+
+
+### Step 3 | Fire Up the Engine and Let It Converge
+Our clustering motor is built, time to **flip the switch**. We’ll keep things simple for a first run: set `k = 3`, track every centroid update, and print a quick summary so we know how many iterations (and penguins per cluster) it took to stabilise.
+
+```{python}
+#| label: step3-run
+#| echo: true
+#| code-fold: true
+# ① choose k (we’ll justify “3” with diagnostics later)
+k_choice = 3
+
+# ② run our custom K-Means, keeping the full centroid history
+labels, centroids, history = my_kmeans(X_std, k_choice, record_steps=True)
+
+# ③ quick convergence report
+print(f"Converged after {len(history)-1} iterations.")
+
+# ④ sanity-check: how many birds per cluster?
+unique, counts = np.unique(labels, return_counts=True)
+for cid, cnt in zip(unique, counts):
+    print(f"Cluster {cid}: {cnt} penguins")
+```
+
+### Step 4 | Watch the Centroids Settle
+Numbers alone say *converged in 12 iterations*—but eyeballs learn faster from pictures. Below we visualise **the first three updates and the final configuration**. Each panel re-colours the penguins according to the centroids of *that* step, so you can literally see how ownership of points shifts as the algorithm homes in on stable clusters.
+
+
+```{python}
+#| label: step4-path-2x2
+#| echo: false
+#| code-fold: true
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+sns.set_style("whitegrid")
+
+# ── choose which iterations to display ────────────────────────────────────────
+frames = [0, 1, 2, -1]  # 0 = random start, -1 = final
+fig, axs = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)  # smaller figsize
+axs = axs.flatten()  # turn 2x2 grid into 1D list for easy looping
+
+palette = {
+    0: "#6CA0DC",   # BLUE
+    1: "#B19CD9",   # PURPLE
+    2: "#F7C6D9"    # light pink
+}
+
+for ax, step in zip(axs, frames):
+    idx = step if step >= 0 else len(history) - 1
+    cent = history[idx]
+
+    # assign every point to current centroids
+    step_labels = np.linalg.norm(X_std[:, None] - cent[None, :], axis=2).argmin(axis=1)
+
+    # scatter plot
+    sns.scatterplot(x=X_std[:, 0], y=X_std[:, 1],
+                    hue=step_labels, palette=palette,
+                    legend=False, ax=ax, alpha=0.6)
+
+    ax.scatter(cent[:, 0], cent[:, 1], marker="X", s=80, c="black")  # slightly smaller marker
+    ax.set_title(f"Iteration {idx}", fontsize=10)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+
+# shared labels
+fig.text(0.5, 0.04, "Bill length (standardised)", ha='center')
+fig.text(0.04, 0.5, "Flipper length (standardised)", va='center', rotation='vertical')
+plt.tight_layout(rect=[0.05, 0.05, 1, 0.95])
+plt.show()
+```
+
+
+The black **X** marks at Iteration 0 show three centroids dropped at random. Notice how the first hop (Iteration 1) is the largest, each centroid sprints toward the densest patch of nearby birds. By Iteration 2 the moves are shorter; the centroids are now fine-tuning their positions as ownership of borderline penguins swaps back and forth. The final panel (right-most) is where the dance stops: every bird is closer to its own centroid than to any rival, so K-Means declares victory.
+
+Key take-aways from the migration movie:
+
+* **Convergence speed.** Twelve iterations isn’t bad for 333 birds; most of the “work” was done in the first two hops.  
+* **Cluster shapes.** The orange cloud sits lower on the flipper axis, the blue cloud has longer bills *and* longer flippers, while the green group bridges the gap, mirroring what biologists know about Adelie, Gentoo, and Chinstrap morphologies.  
+* **Centroid stability.** No centroid oscillates once it reaches its niche, confirming our tolerance parameter (`tol = 1e-4`) isn’t prematurely halting the loop.
+
+With the motion picture digested, let’s **freeze the frame** and map the final clusters more cleanly before benchmarking against scikit-learn.
+
+### Step 5 | Final Cluster Map
+The migration movie is fun, but decision-makers usually want a **single, clean snapshot** that shows where everything finally landed. Below we plot the **last centroid positions** and color each penguin by its permanent cluster ID.
+```{python}
+#| label: step5-finalmap
+#| echo: false
+#| code-fold: true
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style("whitegrid")
+
+# Custom color palette for 3 clusters
+palette = {
+    0: "#6CA0DC",   # BLUE
+    1: "#B19CD9",   # PURPLE
+    2: "#F7C6D9"    # light pink
+}
+
+plt.figure(figsize=(6, 5))
+sns.scatterplot(x=X_std[:, 0], y=X_std[:, 1],
+                hue=labels, palette=palette, s=60, alpha=0.8)
+plt.scatter(centroids[:, 0], centroids[:, 1],
+            marker="X", c="black", s=140, label="Centroid")
+
+plt.xlabel("Bill length (standardised)")
+plt.ylabel("Flipper length (standardised)")
+plt.title("Final K-Means Clusters  •  k = 3", fontsize=13)
+plt.legend(title="Cluster ID")
+plt.tight_layout()
+plt.show()
+```
+
+**Interpreting the Final Cluster Map**
+
+* **Three crisp clouds.**  
+  * The **purple** group sits lower on the flipper axis and shorter on the bill axis—matching what biologists would expect for **Adelie** penguins.  
+  * The **pink** group occupies the upper-right corner with both the **longest bills and flippers**; this is textbook **Gentoo** morphology.  
+  * The **blue** group bridges the two extremes, consistent with **Chinstrap** measurements.
+
+* **Well-separated centroids.**  
+  Each black **X** lands in the densest part of its cloud; there is no centroid awkwardly stranded between groups.  
+  That visual gap implies good within cluster cohesion and clear between cluster separation.
+
+* **Balanced segment sizes.**  
+  Cluster counts (64 · 146 · 123) show no single group dominates the sample, so downstream analyses, like segment-specific marketing or conservation policies won’t hinge on a tiny sliver of data.
+
+Taken together, the picture reassures us that the algorithm didn’t just converge, it converged to **biologically plausible** clusters. Next we run a quick benchmark against `scikit-learn` to make sure our hand-rolled labels align with industry-standard K-Means.
+
+### Step 6 | Reality Check : Hand-Built vs. `scikit-learn`
+Our clusters look sensible, but let’s test them against the industry workhorse: `sklearn.cluster.KMeans`. If both methods tell the same story, we can be confident our implementation is sound.
+
+```{python}
+#| label: step6-benchmark
+#| echo: true
+#| code-fold: true
+from sklearn.cluster import KMeans as SKKMeans
+from sklearn.metrics import adjusted_rand_score
+from scipy.spatial.distance import cdist
+import numpy as np
+import pandas as pd
+
+# 1️⃣  Fit scikit-learn K-Means on the *same* scaled matrix
+sk_model  = SKKMeans(n_clusters=k_choice, random_state=42, n_init=10).fit(X_std)
+sk_labels = sk_model.labels_
+sk_cent   = sk_model.cluster_centers_
+
+# 2️⃣  Compare labelings with Adjusted Rand Index (0 = random, 1 = perfect agreement)
+ari = adjusted_rand_score(sk_labels, labels)
+print(f"Adjusted Rand Index (DIY vs scikit-learn): {ari:.3f}")
+
+# 3️⃣  Pair each DIY centroid with its nearest sklearn neighbour and show the gap
+pair_d = cdist(centroids, sk_cent).min(axis=1)
+gap_df = pd.DataFrame({"Cluster": range(k_choice),
+                       "Centroid gap (std-units)": np.round(pair_d, 4)})
+gap_df
+```
+
+### How Many Clusters? 
+With the **hand-built K-Means** now validated against scikit-learn, the natural follow-up question is: *did we choose the right* *k*?  
+To let the data speak, we rely on two complementary yardsticks:
+
+1. **Within-Cluster-Sum-of-Squares (WCSS)** – the “elbow” test.  
+2. **Silhouette score** – measures how well-separated the clusters are.
+
+We’ll evaluate both metrics for **k = 2 … 7** and inspect the resulting curves.
+
+```{python}
+#| label: diag-loop
+#| echo: true
+#| code-fold: true
+from sklearn.metrics import silhouette_score
+import pandas as pd
+import numpy as np
+
+def wcss(X, labels, cents):
+    """Sum of squared distances of points to their assigned centroid."""
+    return sum(np.linalg.norm(X[labels == j] - cents[j], axis=1).sum()
+               for j in range(len(cents)))
+
+diagnostics = []
+for k in range(2, 8):                                 # k = 2 → 7
+    lbls, cents, _ = my_kmeans(X_std, k, record_steps=False)
+    diagnostics.append(
+        {"k": k,
+         "WCSS": wcss(X_std, lbls, cents),
+         "Silhouette": silhouette_score(X_std, lbls)}
+    )
+
+diag_df = pd.DataFrame(diagnostics)
+diag_df
+```
+
+A quick scan of the numbers already hints at the answer:
+
+* **WCSS** shrinks rapidly from *k = 2* → *k = 3* and then tapers off, suggesting a classic “elbow” at 3.  
+* **Silhouette** peaks at *k = 2* but stays almost as high at *k = 3*; scores fall noticeably once we split the birds into four or more clusters.
+
+To see those patterns more clearly and to defend our choice visually, we plot both metrics side-by-side next.
+
+```{python}
+#| label: diag-plot
+#| echo: false
+#| code-fold: true
+import matplotlib.pyplot as plt
+import seaborn as sns; sns.set_style("whitegrid")
+
+fig, ax = plt.subplots(2, 1, figsize=(6, 8))  # stacked vertically
+
+# Elbow chart
+ax[0].plot(diag_df["k"], diag_df["WCSS"], marker="o", color="#B19CD9")
+ax[0].set_xlabel("k")
+ax[0].set_ylabel("Within-cluster SS")
+ax[0].set_title("Elbow Method")
+
+# Silhouette chart
+ax[1].plot(diag_df["k"], diag_df["Silhouette"], marker="o", color="#6CA0DC")
+ax[1].set_xlabel("k")
+ax[1].set_ylabel("Silhouette score")
+ax[1].set_title("Silhouette Analysis")
+
+plt.tight_layout()
+plt.show()
+
+```
+
+**What the two curves are telling us**
+
+| Clue | Observation | Implication |
+|------|-------------|-------------|
+| **Elbow** | Sharp drop from *k = 2 → 3* (≈ 20 % reduction in WCSS), then a gentle slope thereafter. | Three clusters capture the bulk of the internal variance; adding a fourth yields only incremental benefit. |
+| **Silhouette** | Highest score at *k = 2* (≈ 0.54), but *k = 3* is only a hair lower (≈ 0.52). Scores tumble once we split into 4+ groups. | Two clusters are the most “self-contained,” yet three clusters keep almost the same cohesion while offering finer segmentation. |
+
+**Balancing the evidence**
+
+* If our sole goal were **maximum silhouette**, we’d stop at *k = 2* and call it a day.  
+* However, the **elbow flattening** at *k = 3* and the **biological prior** (three penguin species) argue that the slight silhouette sacrifice is worth the extra descriptive power.
+
+**Recommended choice: k = 3** 
+
+It respects both heuristics, aligns with domain knowledge, and matches the clean cluster map we saw earlier.
+
+
+
+
+## 2a. K Nearest Neighbors
+
+
+After clustering the penguins, we now shift to a **supervised** task:
+can a simple, distance-based classifier recover a quirky decision boundary we embed in synthetic data?  
+K-Nearest Neighbors (KNN) is perfect here: no training equations, just geometry.
+
+Before training the algorithm we need a sandbox.  Rather than reuse penguins, we’ll sketch a **synthetic two-feature world** with a deliberately *wiggly* decision boundary.  Think of it as a stylized market where customers above the curve churn ( `y = 1` ) and those below stay loyal ( `y = 0` ). KNN’s job will be to learn that curvy cutoff.
+
+### Create two numeric features
+To see KNN learn from scratch, we first need a **playground** where the “true” rule is known but far from straight-line. We’ll draw 100 random “customers” in a two-dimensional space (`x1`, `x2`) and label them by a **sine-wave boundary**:
+
+If a point sits **above** `x₂ = sin(4·x₁) + x₁`, call it **1**; otherwise call it **0**.
+
+That gives KNN something realistic yet non-linear to chew on.
+
+```{python}
+#| label: dataset
+#| echo: false
+#| code-fold: true
+import numpy as np
+import pandas as pd
+
+# ----- generate data ---------------------------------------------------------
+np.random.seed(42)
+n = 100
+x1 = np.random.uniform(-3, 3, size=n)
+x2 = np.random.uniform(-3, 3, size=n)
+
+# ----- define a wiggly boundary ---------------------------------------------
+boundary = np.sin(4 * x1) + x1
+above_boundary = (x2 > boundary).astype(int)        # 1 = above, 0 = below
+
+# put everything into a DataFrame, *then* mark y as categorical
+dat = pd.DataFrame({"x1": x1, "x2": x2, "y": above_boundary})
+dat["y"] = dat["y"].astype("category")
+```
+
+```{python}
+#| label: knn-plot
+#| echo: false
+#| code-fold: true
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style("whitegrid")
+
+plt.figure(figsize=(6,5))
+sns.scatterplot(data=dat, x="x1", y="x2", hue="y",
+                palette={0:"#6CA0DC", 1:"#B19CD9" }, s=60)
+# draw the boundary for reference
+x_line = np.linspace(-3, 3, 400)
+plt.plot(x_line, np.sin(4*x_line) + x_line, c="black", lw=1, ls="--")
+plt.xlabel("$x_1$"); plt.ylabel("$x_2$")
+plt.title("Synthetic Dataset with Wiggly Decision Boundary")
+plt.legend(title="Class  y")
+plt.tight_layout(); plt.show()
+```
+
+* The **dashed curve** is the ground-truth decision boundary.  Points above the line (orange) are class 1; those below (blue) are class 0.  
+* The boundary **snakes** upward: a gentle rise plus four sinusoidal bumps.  Any straight-line model would struggle here, perfect terrain for KNN.  
+* Class balance is reasonably even (≈ 50/50), so accuracy won’t be inflated by a dominant majority class.
+
+### Train KNN and Visualize the Decision Boundary
+Now that we’ve defined the data and its labels, let’s see how well K-Nearest Neighbors (KNN) can trace the wiggly boundary using only proximity.
+KNN doesn’t learn a formula, it simply looks around. To classify a new point, it checks which class is most common among its k nearest neighbors.
+Let’s train a model with k = 7 and color the background to show which class KNN would predict in different regions of the feature space.
+
+```{python}
+#| label: knn-decision-boundary
+#| echo: false
+#| code-fold: true
+from sklearn.neighbors import KNeighborsClassifier
+import numpy as np, pandas as pd
+import matplotlib.pyplot as plt, seaborn as sns
+sns.set_style("whitegrid")
+
+# ① fit on the original DataFrame
+knn = KNeighborsClassifier(n_neighbors=7)
+knn.fit(dat[["x1", "x2"]], dat["y"])
+
+# ② make grid and wrap it in a DataFrame with matching column names
+x1_vals = np.linspace(-3, 3, 300)
+x2_vals = np.linspace(-3, 3, 300)
+xx1, xx2 = np.meshgrid(x1_vals, x2_vals)
+grid_df  = pd.DataFrame({"x1": xx1.ravel(), "x2": xx2.ravel()})
+
+# ③ predict
+zz = knn.predict(grid_df).reshape(xx1.shape)
+
+# ④ plot
+plt.figure(figsize=(6, 5))
+plt.contourf(xx1, xx2, zz, levels=1, alpha=.25, cmap="coolwarm")
+
+# Custom color palette: 0 = non-customer (purple), 1 = customer (blue)
+palette = {0: "#B19CD9", 1: "#6CA0DC"}
+sns.scatterplot(data=dat, x="x1", y="x2", hue="y",
+                palette=palette, s=60, edgecolor="white")
+
+# Reference boundary
+x_line = np.linspace(-3, 3, 400)
+plt.plot(x_line, np.sin(4 * x_line) + x_line, c="black", lw=1.2, ls="--")
+
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.title("KNN Decision Boundary  •  k = 7")
+plt.legend(title="Class  y")
+plt.tight_layout()
+plt.show()
+```
+
+**What the filled contour is telling us**
+
+* **Overall shape.**  
+  KNN with **k = 7** captures the broad ups–downs of the sine-wave boundary:
+  blue prediction zones hug most troughs, orange fills the peaks.
+
+* **Smoothing effect.**  
+  Where the true boundary wiggles sharply, the KNN frontier rounds off, especially near `x₁ ≈ −2` and `x₁ ≈ +1.5`.  
+  That’s the price of asking seven neighbors for advice: you reduce noise but also blunt fine detail.
+
+* **Isolated errors.**  
+  A few blue dots wander into orange territory (and vice-versa).  
+  Those are points whose seven nearest neighbors straddle the curve; the vote
+  simply goes with the local majority.
+
+* **Take-away.**  
+  **k = 7** gives a reasonable, but not perfect match.  
+  Smaller *k* would trace the wiggles more tightly (risking over-fit);
+  larger *k* would smooth them away (risking under-fit).
+
+### Create a Hold-Out Test Set  
+A good classifier earns its stripes on **unseen data**, not the examples it learned from. So we’ll generate a fresh batch of 100 points using the **same recipe** as before, but flip the random seed to guarantee there’s **no overlap** with the training set.
+
+```{python}
+#| label: knn-test-data
+#| echo: true
+#| code-fold: true
+import numpy as np, pandas as pd
+from collections import Counter
+# ── new seed so points differ from the training sample ────────────────────────
+np.random.seed(24)
+n_test = 100
+x1_t   = np.random.uniform(-3, 3, size=n_test)
+x2_t   = np.random.uniform(-3, 3, size=n_test)
+
+# same curvy boundary
+boundary_t       = np.sin(4 * x1_t) + x1_t
+y_test           = (x2_t > boundary_t).astype(int)
+
+test_dat = pd.DataFrame({"x1": x1_t, "x2": x2_t, "y": y_test})
+test_dat["y"] = test_dat["y"].astype("category")
+
+print("Test set shape:", test_dat.shape)
+test_dat.head()
+```
+
+### Creating Our Own KNN 
+
+Let's build our own KNN.
+
+The rules are simple:
+
+1. For every test point, measure its Euclidean distance to all training points.  
+2. Grab the *k* closest neighbors (we’ll keep **k = 7** for consistency).  
+3. Assign the majority class among those neighbors.
+
+```{python}
+#| label: knn-hand
+#| echo: true
+#| code-fold: false
+def knn_predict(train_X, train_y, test_X, k=7):
+    preds = []
+    for x in test_X:
+        # ① compute distances to all training points
+        dists = np.linalg.norm(train_X - x, axis=1)
+        # ② indices of k nearest
+        idx   = np.argsort(dists)[:k]
+        # ③ majority vote
+        votes = Counter(train_y[idx]).most_common(1)[0][0]
+        preds.append(votes)
+    return np.array(preds)
+
+# prepare arrays
+train_X = dat[["x1", "x2"]].to_numpy()
+train_y = dat["y"].astype(int).to_numpy()
+test_X  = test_dat[["x1", "x2"]].to_numpy()
+test_y  = test_dat["y"].astype(int).to_numpy()
+
+# DIY predictions
+y_pred_hand = knn_predict(train_X, train_y, test_X, k=7)
+```
+
+Our custom `knn_predict` function now returns a class label for each of the 100 hold-out customers.  
+Before handing the same task to scikit-learn, pause for two sanity checks:
+
+1. **Logic audit** : we relied only on Euclidean distance, majority vote, and a fixed `k`. Nothing else slipped in (no prior boundary info, no data leakage).  
+2. **Edge cases** : ties are impossible with an odd `k`; if we had chosen an even number, we’d need a tie-breaker rule.
+
+
+#### KNN - scikit-learn 
+
+Now, lets double check our own KNN with scikit-learn.
+```{python}
+#| label: knn-sklearn
+#| echo: true
+#| code-fold: true
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+
+# scikit-learn model (same k)
+sk_model = KNeighborsClassifier(n_neighbors=7)
+sk_model.fit(train_X, train_y)
+y_pred_sk = sk_model.predict(test_X)
+
+# Compare predictions
+match_rate = (y_pred_hand == y_pred_sk).mean()
+acc_test   = accuracy_score(test_y, y_pred_hand)
+
+print(f"DIY vs sklearn label match:  {match_rate:.3f}")
+print(f"Test-set accuracy (k = 7) :  {acc_test:.3f}")
+```
+
+
+* **Perfect label match (1.000).**  
+  Every single prediction from our hand-coded loop matches scikit-learn’s
+  output. That confirms the distance calculation, neighbor sorting, and majority
+  vote logic are all spot-on.
+
+* **Test accuracy ≈ 0.89.**  
+  On genuinely unseen customers the model classifies almost nine out of ten
+  correctly, a solid score given the noisy, non-linear boundary.
+
+### Fine-Tuning the Neighborhood — Accuracy Curve for *k* = 1 … 30  
+
+So far we’ve stuck with **k = 7**, but the bias-variance trade-off in KNN
+depends heavily on that single integer:
+
+* **Small k** → very flexible, can hug every wiggle but risks over-fitting noise.  
+* **Large k** → smoother boundary, less noise-sensitive, but may blur subtle
+  patterns.
+
+Let’s sweep *k* from **1 to 30**, compute test-set accuracy each time, and let
+the curve reveal the sweet spot.
+
+```{python}
+#| label: knn-grid
+#| echo: true
+#| code-fold: true
+import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+
+acc_scores = []
+for k in range(1, 31):
+    preds = knn_predict(train_X, train_y, test_X, k=k)
+    acc   = (preds == test_y).mean()
+    acc_scores.append({"k": k, "Accuracy": acc})
+
+k_df = pd.DataFrame(acc_scores)
+```
+```{python}
+#| label: knn-acc-plot
+#| echo: false
+plt.figure(figsize=(7,4))
+plt.plot(k_df["k"], k_df["Accuracy"]*100, marker="o", color="#6CA0DC")
+plt.xticks(range(1,31,2))
+plt.xlabel("k  (number of neighbors)")
+plt.ylabel("Test accuracy  (%)")
+plt.title("Test-set Accuracy vs k")
+plt.ylim(0,100); plt.grid(True, ls=":")
+plt.tight_layout(); plt.show()
+```
+
+
+* The line hovers around **90 %–94 %** across the full sweep, so KNN is generally robust on this task.  
+* **Peak accuracy** occurs at **k ≈ 2** (≈ 94 %).  
+  *k = 1* ties for first but is more volatile; any tiny noise flip changes the vote.  
+* Accuracy drifts downward once *k* exceeds ~10—evidence that a very large
+  neighborhood blurs the nuanced wiggles we want to capture.
+
+ **Recommended neighbor count:** **k = 2** 
+ 
+It edges out larger choices in accuracy while keeping the decision boundary reasonably smooth.
+
+
+## Final Reflections : From Penguins to Synthetic Customers  
+
+| Section | Core Lesson | Decision Made |
+|---------|-------------|---------------|
+| **K-Means (unsupervised)** | Hand-coded loop plus elbow + silhouette showed three tight clusters, matching biological reality and scikit-learn. | **k = 3** |
+| **KNN (supervised)** | DIY classifier matched scikit-learn exactly; grid search on hold-out data identified the most reliable neighborhood size. | **k = 2** |
+
+
+
+
+
+
+
+
+

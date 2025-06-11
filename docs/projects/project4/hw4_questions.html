@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.43">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Yoonjeong Park">
+<meta name="dcterms.date" content="2025-06-11">
+
+<title>K-Means and K-Nearest Neighbors – Yoonjeong’s Website</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-d4d76bf8491c20bad77d141916dc28e1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-6bd9cfa162949bde0a231f530c97869d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Yoonjeong’s Website</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../resume.html"> 
+<span class="menu-text">Resume</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../projects.html"> 
+<span class="menu-text">My Projects</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#k-means" id="toc-k-means" class="nav-link active" data-scroll-target="#k-means">K-Means</a>
+  <ul class="collapse">
+  <li><a href="#step-1-select-standardise-the-two-features" id="toc-step-1-select-standardise-the-two-features" class="nav-link" data-scroll-target="#step-1-select-standardise-the-two-features">Step 1 | Select &amp; Standardise the Two Features</a></li>
+  <li><a href="#step-2-build-a-k-means-function" id="toc-step-2-build-a-k-means-function" class="nav-link" data-scroll-target="#step-2-build-a-k-means-function">Step 2 | Build a K-means function</a></li>
+  <li><a href="#step-3-fire-up-the-engine-and-let-it-converge" id="toc-step-3-fire-up-the-engine-and-let-it-converge" class="nav-link" data-scroll-target="#step-3-fire-up-the-engine-and-let-it-converge">Step 3 | Fire Up the Engine and Let It Converge</a></li>
+  <li><a href="#step-4-watch-the-centroids-settle" id="toc-step-4-watch-the-centroids-settle" class="nav-link" data-scroll-target="#step-4-watch-the-centroids-settle">Step 4 | Watch the Centroids Settle</a></li>
+  <li><a href="#step-5-final-cluster-map" id="toc-step-5-final-cluster-map" class="nav-link" data-scroll-target="#step-5-final-cluster-map">Step 5 | Final Cluster Map</a></li>
+  <li><a href="#step-6-reality-check-hand-built-vs.-scikit-learn" id="toc-step-6-reality-check-hand-built-vs.-scikit-learn" class="nav-link" data-scroll-target="#step-6-reality-check-hand-built-vs.-scikit-learn">Step 6 | Reality Check : Hand-Built vs.&nbsp;<code>scikit-learn</code></a></li>
+  <li><a href="#how-many-clusters" id="toc-how-many-clusters" class="nav-link" data-scroll-target="#how-many-clusters">How Many Clusters?</a></li>
+  </ul></li>
+  <li><a href="#a.-k-nearest-neighbors" id="toc-a.-k-nearest-neighbors" class="nav-link" data-scroll-target="#a.-k-nearest-neighbors">2a. K Nearest Neighbors</a>
+  <ul class="collapse">
+  <li><a href="#create-two-numeric-features" id="toc-create-two-numeric-features" class="nav-link" data-scroll-target="#create-two-numeric-features">Create two numeric features</a></li>
+  <li><a href="#train-knn-and-visualize-the-decision-boundary" id="toc-train-knn-and-visualize-the-decision-boundary" class="nav-link" data-scroll-target="#train-knn-and-visualize-the-decision-boundary">Train KNN and Visualize the Decision Boundary</a></li>
+  <li><a href="#create-a-hold-out-test-set" id="toc-create-a-hold-out-test-set" class="nav-link" data-scroll-target="#create-a-hold-out-test-set">Create a Hold-Out Test Set</a></li>
+  <li><a href="#creating-our-own-knn" id="toc-creating-our-own-knn" class="nav-link" data-scroll-target="#creating-our-own-knn">Creating Our Own KNN</a></li>
+  <li><a href="#fine-tuning-the-neighborhood-accuracy-curve-for-k-1-30" id="toc-fine-tuning-the-neighborhood-accuracy-curve-for-k-1-30" class="nav-link" data-scroll-target="#fine-tuning-the-neighborhood-accuracy-curve-for-k-1-30">Fine-Tuning the Neighborhood — Accuracy Curve for <em>k</em> = 1 … 30</a></li>
+  </ul></li>
+  <li><a href="#final-reflections-from-penguins-to-synthetic-customers" id="toc-final-reflections-from-penguins-to-synthetic-customers" class="nav-link" data-scroll-target="#final-reflections-from-penguins-to-synthetic-customers">Final Reflections : From Penguins to Synthetic Customers</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">K-Means and K-Nearest Neighbors</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Yoonjeong Park </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 11, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="k-means" class="level2">
+<h2 class="anchored" data-anchor-id="k-means">K-Means</h2>
+<p><strong>What problem does K-Means solve?</strong><br>
+Imagine walking into an unfamiliar supermarket and wanting to arrange products into natural aisles without consulting a pre-defined category list. K-Means does exactly that for numeric data: it groups points so items in the same bin are closer to each other than to items in other bins.</p>
+<p><strong>How does the algorithm work?</strong></p>
+<ol type="1">
+<li><strong>Pick <em>K</em></strong> — the desired number of bins (aisles, clusters).<br>
+</li>
+<li><strong>Drop random centroids</strong> — initial “aisle markers.”<br>
+</li>
+<li><strong>Assign</strong> every data point to the nearest centroid.<br>
+</li>
+<li><strong>Update</strong> each centroid to the mean of its assigned points.<br>
+</li>
+<li><strong>Repeat 3–4</strong> until centroids hardly move.</li>
+</ol>
+<p>The beauty is its <em>simplicity</em>: two distance calculations (assign &amp; update) loop until the system relaxes.</p>
+<p><strong>Good to know before we build our own code to implement the k-means algorithm</strong></p>
+<ul>
+<li><strong>Scale matters.</strong> Features measured in wildly different units will hijack the distance metric, so we’ll standardise first.<br>
+</li>
+<li><strong>Initialization is random.</strong> Different starting points can yield slightly different results; we’ll fix a seed for reproducibility and later compare to scikit-learn’s implementation.<br>
+</li>
+<li><strong>Choosing <em>K</em> is an art and a science.</strong> We’ll lean on two heuristics — the elbow (WCSS) and silhouette scores — to let the data, not our eyeballs, nominate a sensible value.</li>
+</ul>
+<p>With that mental model in place, let’s first see how the penguin dataset looks like.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 34%">
+<col style="width: 41%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Unit / Levels</th>
+<th>What it Captures</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>species</code></td>
+<td><em>Adelie · Chinstrap · Gentoo</em></td>
+<td>Ground-truth label of the bird’s taxonomic group; <strong>not</strong> used in clustering (kept only for a later sanity-check plot).</td>
+</tr>
+<tr class="even">
+<td><code>island</code></td>
+<td><em>Biscoe · Dream · Torgersen</em></td>
+<td>Capture location within the Palmer Archipelago; a rough habitat proxy (ignored in the 2-D K-Means demo).</td>
+</tr>
+<tr class="odd">
+<td><code>bill_length_mm</code></td>
+<td>millimetres</td>
+<td>Length of the beak tip-to-base; often linked to diet and feeding style.</td>
+</tr>
+<tr class="even">
+<td><code>bill_depth_mm</code></td>
+<td>millimetres</td>
+<td>Thickness of the beak; complements bill length in distinguishing species.</td>
+</tr>
+<tr class="odd">
+<td><code>flipper_length_mm</code></td>
+<td>millimetres</td>
+<td>Length of the flipper (wing); proxy for swimming power and foraging range.</td>
+</tr>
+<tr class="even">
+<td><code>body_mass_g</code></td>
+<td>grams</td>
+<td>Overall body weight; seasonal variation can reflect health or breeding stage.</td>
+</tr>
+<tr class="odd">
+<td><code>sex</code></td>
+<td><em>male · female</em> (some missing)</td>
+<td>Biological sex; males are typically slightly larger.</td>
+</tr>
+<tr class="even">
+<td><code>year</code></td>
+<td>2007 – 2009</td>
+<td>Expedition year when measurements were recorded; serves mostly as a timestamp.</td>
+</tr>
+</tbody>
+</table>
+<p>Armed with just two numeric columns and a mental picture of how the algorithm should behave, we can now build <strong>K-Means from scratch</strong>.</p>
+<p>The plan:</p>
+<ol type="1">
+<li>Standardise <em>bill</em> and <em>flipper</em> so distance units are comparable.<br>
+</li>
+<li>Write a minimal <code>my_kmeans()</code> that alternates <strong>assign</strong> → <strong>update</strong>.<br>
+</li>
+<li>Capture each centroid hop so we can <em>watch</em> convergence.<br>
+</li>
+<li>Benchmark our labels against <code>sklearn.cluster.KMeans</code>.</li>
+</ol>
+<section id="step-1-select-standardise-the-two-features" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-select-standardise-the-two-features">Step 1 | Select &amp; Standardise the Two Features</h3>
+<p>First we isolate <strong>bill length</strong> and <strong>flipper length</strong>, drop any rows with missing values, and standardise them so one millimetre in bill length weighs the same as one millimetre in flipper length.</p>
+<div id="step1-scale" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 1. load &amp; filter ---------------------------------------------------------</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>X_raw <span class="op">=</span> df[[<span class="st">"bill_length_mm"</span>, <span class="st">"flipper_length_mm"</span>]].dropna().values</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 2. standardise -----------------------------------------------------------</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>scaler   <span class="op">=</span> StandardScaler()</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>X_std    <span class="op">=</span> scaler.fit_transform(X_raw)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Shape after dropping NAs:"</span>, X_std.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Shape after dropping NAs: (333, 2)</code></pre>
+</div>
+</div>
+</section>
+<section id="step-2-build-a-k-means-function" class="level3">
+<h3 class="anchored" data-anchor-id="step-2-build-a-k-means-function">Step 2 | Build a K-means function</h3>
+<p>With <code>X_std</code> now giving every penguin equal footing in distance space, the next task is to <strong>let the points sort themselves out</strong>.<br>
+That means coding the heart of K-Means, an iterative <em>assign → update</em> routine that nudges centroids until our standardised bill-and-flipper matrix settles into stable clusters.</p>
+<div id="step2-impl" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> my_kmeans(X, k, max_iter<span class="op">=</span><span class="dv">100</span>, tol<span class="op">=</span><span class="fl">1e-4</span>, random_state<span class="op">=</span><span class="dv">42</span>, record_steps<span class="op">=</span><span class="va">True</span>):</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Lightweight, from-scratch K-Means.</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">    X : ndarray (n_samples × n_features)</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">        Standardised feature matrix (here: bill &amp; flipper).</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">    k : int</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">        Desired number of clusters.</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">    max_iter : int</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">        Safety cap on iterations.</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">    tol : float</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">        Stop when the largest centroid move is smaller than this.</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">    random_state : int</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">        Seed for reproducible centroid seeding.</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">    record_steps : bool</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">        If True, return a full history of centroid positions.</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co">    labels    : ndarray, length n_samples</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">        Cluster assignment for every row.</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co">    centroids : ndarray, shape (k, n_features)</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">        Final centroid coordinates.</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">    history   : list[ndarray]</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co">        Centroid positions after each update (len = iterations + 1).</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    rng       <span class="op">=</span> np.random.default_rng(random_state)</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    centroids <span class="op">=</span> X[rng.choice(<span class="bu">len</span>(X), size<span class="op">=</span>k, replace<span class="op">=</span><span class="va">False</span>)]     <span class="co"># ① random start</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    history   <span class="op">=</span> [centroids.copy()] <span class="cf">if</span> record_steps <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(max_iter):</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ② assignment: send each point to its nearest centroid</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        dists  <span class="op">=</span> np.linalg.norm(X[:, <span class="va">None</span>] <span class="op">-</span> centroids[<span class="va">None</span>, :], axis<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>        labels <span class="op">=</span> dists.argmin(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ③ update: recalc centroids as cluster means</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>        new_centroids <span class="op">=</span> np.vstack([X[labels <span class="op">==</span> j].mean(axis<span class="op">=</span><span class="dv">0</span>) <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(k)])</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ④ convergence check</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> np.linalg.norm(new_centroids <span class="op">-</span> centroids, axis<span class="op">=</span><span class="dv">1</span>).<span class="bu">max</span>() <span class="op">&lt;</span> tol:</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>            centroids <span class="op">=</span> new_centroids</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> record_steps: history.append(centroids.copy())</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        centroids <span class="op">=</span> new_centroids</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> record_steps: history.append(centroids.copy())</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> labels, centroids, history</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="step-3-fire-up-the-engine-and-let-it-converge" class="level3">
+<h3 class="anchored" data-anchor-id="step-3-fire-up-the-engine-and-let-it-converge">Step 3 | Fire Up the Engine and Let It Converge</h3>
+<p>Our clustering motor is built, time to <strong>flip the switch</strong>. We’ll keep things simple for a first run: set <code>k = 3</code>, track every centroid update, and print a quick summary so we know how many iterations (and penguins per cluster) it took to stabilise.</p>
+<div id="step3-run" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ① choose k (we’ll justify “3” with diagnostics later)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>k_choice <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ② run our custom K-Means, keeping the full centroid history</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>labels, centroids, history <span class="op">=</span> my_kmeans(X_std, k_choice, record_steps<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ③ quick convergence report</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Converged after </span><span class="sc">{</span><span class="bu">len</span>(history)<span class="op">-</span><span class="dv">1</span><span class="sc">}</span><span class="ss"> iterations."</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># ④ sanity-check: how many birds per cluster?</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>unique, counts <span class="op">=</span> np.unique(labels, return_counts<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> cid, cnt <span class="kw">in</span> <span class="bu">zip</span>(unique, counts):</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Cluster </span><span class="sc">{</span>cid<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>cnt<span class="sc">}</span><span class="ss"> penguins"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Converged after 12 iterations.
+Cluster 0: 64 penguins
+Cluster 1: 146 penguins
+Cluster 2: 123 penguins</code></pre>
+</div>
+</div>
+</section>
+<section id="step-4-watch-the-centroids-settle" class="level3">
+<h3 class="anchored" data-anchor-id="step-4-watch-the-centroids-settle">Step 4 | Watch the Centroids Settle</h3>
+<p>Numbers alone say <em>converged in 12 iterations</em>—but eyeballs learn faster from pictures. Below we visualise <strong>the first three updates and the final configuration</strong>. Each panel re-colours the penguins according to the centroids of <em>that</em> step, so you can literally see how ownership of points shifts as the algorithm homes in on stable clusters.</p>
+<div id="cell-step4-path-2x2" class="cell" data-execution_count="5">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hw4_questions_files/figure-html/step4-path-2x2-output-1.png" id="step4-path-2x2" width="742" height="532" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The black <strong>X</strong> marks at Iteration 0 show three centroids dropped at random. Notice how the first hop (Iteration 1) is the largest, each centroid sprints toward the densest patch of nearby birds. By Iteration 2 the moves are shorter; the centroids are now fine-tuning their positions as ownership of borderline penguins swaps back and forth. The final panel (right-most) is where the dance stops: every bird is closer to its own centroid than to any rival, so K-Means declares victory.</p>
+<p>Key take-aways from the migration movie:</p>
+<ul>
+<li><strong>Convergence speed.</strong> Twelve iterations isn’t bad for 333 birds; most of the “work” was done in the first two hops.<br>
+</li>
+<li><strong>Cluster shapes.</strong> The orange cloud sits lower on the flipper axis, the blue cloud has longer bills <em>and</em> longer flippers, while the green group bridges the gap, mirroring what biologists know about Adelie, Gentoo, and Chinstrap morphologies.<br>
+</li>
+<li><strong>Centroid stability.</strong> No centroid oscillates once it reaches its niche, confirming our tolerance parameter (<code>tol = 1e-4</code>) isn’t prematurely halting the loop.</li>
+</ul>
+<p>With the motion picture digested, let’s <strong>freeze the frame</strong> and map the final clusters more cleanly before benchmarking against scikit-learn.</p>
+</section>
+<section id="step-5-final-cluster-map" class="level3">
+<h3 class="anchored" data-anchor-id="step-5-final-cluster-map">Step 5 | Final Cluster Map</h3>
+<p>The migration movie is fun, but decision-makers usually want a <strong>single, clean snapshot</strong> that shows where everything finally landed. Below we plot the <strong>last centroid positions</strong> and color each penguin by its permanent cluster ID.</p>
+<div id="cell-step5-finalmap" class="cell" data-execution_count="6">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hw4_questions_files/figure-html/step5-finalmap-output-1.png" id="step5-finalmap" width="566" height="471" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Interpreting the Final Cluster Map</strong></p>
+<ul>
+<li><p><strong>Three crisp clouds.</strong></p>
+<ul>
+<li>The <strong>purple</strong> group sits lower on the flipper axis and shorter on the bill axis—matching what biologists would expect for <strong>Adelie</strong> penguins.<br>
+</li>
+<li>The <strong>pink</strong> group occupies the upper-right corner with both the <strong>longest bills and flippers</strong>; this is textbook <strong>Gentoo</strong> morphology.<br>
+</li>
+<li>The <strong>blue</strong> group bridges the two extremes, consistent with <strong>Chinstrap</strong> measurements.</li>
+</ul></li>
+<li><p><strong>Well-separated centroids.</strong><br>
+Each black <strong>X</strong> lands in the densest part of its cloud; there is no centroid awkwardly stranded between groups.<br>
+That visual gap implies good within cluster cohesion and clear between cluster separation.</p></li>
+<li><p><strong>Balanced segment sizes.</strong><br>
+Cluster counts (64 · 146 · 123) show no single group dominates the sample, so downstream analyses, like segment-specific marketing or conservation policies won’t hinge on a tiny sliver of data.</p></li>
+</ul>
+<p>Taken together, the picture reassures us that the algorithm didn’t just converge, it converged to <strong>biologically plausible</strong> clusters. Next we run a quick benchmark against <code>scikit-learn</code> to make sure our hand-rolled labels align with industry-standard K-Means.</p>
+</section>
+<section id="step-6-reality-check-hand-built-vs.-scikit-learn" class="level3">
+<h3 class="anchored" data-anchor-id="step-6-reality-check-hand-built-vs.-scikit-learn">Step 6 | Reality Check : Hand-Built vs.&nbsp;<code>scikit-learn</code></h3>
+<p>Our clusters look sensible, but let’s test them against the industry workhorse: <code>sklearn.cluster.KMeans</code>. If both methods tell the same story, we can be confident our implementation is sound.</p>
+<div id="cell-step6-benchmark" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.cluster <span class="im">import</span> KMeans <span class="im">as</span> SKKMeans</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> adjusted_rand_score</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.spatial.distance <span class="im">import</span> cdist</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 1️⃣  Fit scikit-learn K-Means on the *same* scaled matrix</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>sk_model  <span class="op">=</span> SKKMeans(n_clusters<span class="op">=</span>k_choice, random_state<span class="op">=</span><span class="dv">42</span>, n_init<span class="op">=</span><span class="dv">10</span>).fit(X_std)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>sk_labels <span class="op">=</span> sk_model.labels_</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>sk_cent   <span class="op">=</span> sk_model.cluster_centers_</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 2️⃣  Compare labelings with Adjusted Rand Index (0 = random, 1 = perfect agreement)</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>ari <span class="op">=</span> adjusted_rand_score(sk_labels, labels)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Adjusted Rand Index (DIY vs scikit-learn): </span><span class="sc">{</span>ari<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 3️⃣  Pair each DIY centroid with its nearest sklearn neighbour and show the gap</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>pair_d <span class="op">=</span> cdist(centroids, sk_cent).<span class="bu">min</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>gap_df <span class="op">=</span> pd.DataFrame({<span class="st">"Cluster"</span>: <span class="bu">range</span>(k_choice),</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"Centroid gap (std-units)"</span>: np.<span class="bu">round</span>(pair_d, <span class="dv">4</span>)})</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>gap_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Adjusted Rand Index (DIY vs scikit-learn): 1.000</code></pre>
+</div>
+<div id="step6-benchmark" class="cell-output cell-output-display" data-execution_count="634">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Cluster</th>
+<th data-quarto-table-cell-role="th">Centroid gap (std-units)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>0</td>
+<td>0.0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>1</td>
+<td>0.0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>2</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+<section id="how-many-clusters" class="level3">
+<h3 class="anchored" data-anchor-id="how-many-clusters">How Many Clusters?</h3>
+<p>With the <strong>hand-built K-Means</strong> now validated against scikit-learn, the natural follow-up question is: <em>did we choose the right</em> <em>k</em>?<br>
+To let the data speak, we rely on two complementary yardsticks:</p>
+<ol type="1">
+<li><strong>Within-Cluster-Sum-of-Squares (WCSS)</strong> – the “elbow” test.<br>
+</li>
+<li><strong>Silhouette score</strong> – measures how well-separated the clusters are.</li>
+</ol>
+<p>We’ll evaluate both metrics for <strong>k = 2 … 7</strong> and inspect the resulting curves.</p>
+<div id="cell-diag-loop" class="cell" data-execution_count="8">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> silhouette_score</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> wcss(X, labels, cents):</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Sum of squared distances of points to their assigned centroid."""</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(np.linalg.norm(X[labels <span class="op">==</span> j] <span class="op">-</span> cents[j], axis<span class="op">=</span><span class="dv">1</span>).<span class="bu">sum</span>()</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>               <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(cents)))</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>diagnostics <span class="op">=</span> []</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">2</span>, <span class="dv">8</span>):                                 <span class="co"># k = 2 → 7</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    lbls, cents, _ <span class="op">=</span> my_kmeans(X_std, k, record_steps<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    diagnostics.append(</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        {<span class="st">"k"</span>: k,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>         <span class="st">"WCSS"</span>: wcss(X_std, lbls, cents),</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>         <span class="st">"Silhouette"</span>: silhouette_score(X_std, lbls)}</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>diag_df <span class="op">=</span> pd.DataFrame(diagnostics)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>diag_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div id="diag-loop" class="cell-output cell-output-display" data-execution_count="635">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">k</th>
+<th data-quarto-table-cell-role="th">WCSS</th>
+<th data-quarto-table-cell-role="th">Silhouette</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>2</td>
+<td>251.038381</td>
+<td>0.538876</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>3</td>
+<td>200.099648</td>
+<td>0.518869</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>4</td>
+<td>173.004244</td>
+<td>0.505459</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>5</td>
+<td>153.599779</td>
+<td>0.396319</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>6</td>
+<td>139.589940</td>
+<td>0.390592</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">5</td>
+<td>7</td>
+<td>129.973434</td>
+<td>0.401342</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>A quick scan of the numbers already hints at the answer:</p>
+<ul>
+<li><strong>WCSS</strong> shrinks rapidly from <em>k = 2</em> → <em>k = 3</em> and then tapers off, suggesting a classic “elbow” at 3.<br>
+</li>
+<li><strong>Silhouette</strong> peaks at <em>k = 2</em> but stays almost as high at <em>k = 3</em>; scores fall noticeably once we split the birds into four or more clusters.</li>
+</ul>
+<p>To see those patterns more clearly and to defend our choice visually, we plot both metrics side-by-side next.</p>
+<div id="cell-diag-plot" class="cell" data-execution_count="9">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hw4_questions_files/figure-html/diag-plot-output-1.png" id="diag-plot" width="567" height="758" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>What the two curves are telling us</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 40%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Clue</th>
+<th>Observation</th>
+<th>Implication</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Elbow</strong></td>
+<td>Sharp drop from <em>k = 2 → 3</em> (≈ 20 % reduction in WCSS), then a gentle slope thereafter.</td>
+<td>Three clusters capture the bulk of the internal variance; adding a fourth yields only incremental benefit.</td>
+</tr>
+<tr class="even">
+<td><strong>Silhouette</strong></td>
+<td>Highest score at <em>k = 2</em> (≈ 0.54), but <em>k = 3</em> is only a hair lower (≈ 0.52). Scores tumble once we split into 4+ groups.</td>
+<td>Two clusters are the most “self-contained,” yet three clusters keep almost the same cohesion while offering finer segmentation.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Balancing the evidence</strong></p>
+<ul>
+<li>If our sole goal were <strong>maximum silhouette</strong>, we’d stop at <em>k = 2</em> and call it a day.<br>
+</li>
+<li>However, the <strong>elbow flattening</strong> at <em>k = 3</em> and the <strong>biological prior</strong> (three penguin species) argue that the slight silhouette sacrifice is worth the extra descriptive power.</li>
+</ul>
+<p><strong>Recommended choice: k = 3</strong></p>
+<p>It respects both heuristics, aligns with domain knowledge, and matches the clean cluster map we saw earlier.</p>
+</section>
+</section>
+<section id="a.-k-nearest-neighbors" class="level2">
+<h2 class="anchored" data-anchor-id="a.-k-nearest-neighbors">2a. K Nearest Neighbors</h2>
+<p>After clustering the penguins, we now shift to a <strong>supervised</strong> task: can a simple, distance-based classifier recover a quirky decision boundary we embed in synthetic data?<br>
+K-Nearest Neighbors (KNN) is perfect here: no training equations, just geometry.</p>
+<p>Before training the algorithm we need a sandbox. Rather than reuse penguins, we’ll sketch a <strong>synthetic two-feature world</strong> with a deliberately <em>wiggly</em> decision boundary. Think of it as a stylized market where customers above the curve churn ( <code>y = 1</code> ) and those below stay loyal ( <code>y = 0</code> ). KNN’s job will be to learn that curvy cutoff.</p>
+<section id="create-two-numeric-features" class="level3">
+<h3 class="anchored" data-anchor-id="create-two-numeric-features">Create two numeric features</h3>
+<p>To see KNN learn from scratch, we first need a <strong>playground</strong> where the “true” rule is known but far from straight-line. We’ll draw 100 random “customers” in a two-dimensional space (<code>x1</code>, <code>x2</code>) and label them by a <strong>sine-wave boundary</strong>:</p>
+<p>If a point sits <strong>above</strong> <code>x₂ = sin(4·x₁) + x₁</code>, call it <strong>1</strong>; otherwise call it <strong>0</strong>.</p>
+<p>That gives KNN something realistic yet non-linear to chew on.</p>
+<div id="cell-knn-plot" class="cell" data-execution_count="11">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hw4_questions_files/figure-html/knn-plot-output-1.png" id="knn-plot" width="564" height="467" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>The <strong>dashed curve</strong> is the ground-truth decision boundary. Points above the line (orange) are class 1; those below (blue) are class 0.<br>
+</li>
+<li>The boundary <strong>snakes</strong> upward: a gentle rise plus four sinusoidal bumps. Any straight-line model would struggle here, perfect terrain for KNN.<br>
+</li>
+<li>Class balance is reasonably even (≈ 50/50), so accuracy won’t be inflated by a dominant majority class.</li>
+</ul>
+</section>
+<section id="train-knn-and-visualize-the-decision-boundary" class="level3">
+<h3 class="anchored" data-anchor-id="train-knn-and-visualize-the-decision-boundary">Train KNN and Visualize the Decision Boundary</h3>
+<p>Now that we’ve defined the data and its labels, let’s see how well K-Nearest Neighbors (KNN) can trace the wiggly boundary using only proximity. KNN doesn’t learn a formula, it simply looks around. To classify a new point, it checks which class is most common among its k nearest neighbors. Let’s train a model with k = 7 and color the background to show which class KNN would predict in different regions of the feature space.</p>
+<div id="cell-knn-decision-boundary" class="cell" data-execution_count="12">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hw4_questions_files/figure-html/knn-decision-boundary-output-1.png" id="knn-decision-boundary" width="564" height="467" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>What the filled contour is telling us</strong></p>
+<ul>
+<li><p><strong>Overall shape.</strong><br>
+KNN with <strong>k = 7</strong> captures the broad ups–downs of the sine-wave boundary: blue prediction zones hug most troughs, orange fills the peaks.</p></li>
+<li><p><strong>Smoothing effect.</strong><br>
+Where the true boundary wiggles sharply, the KNN frontier rounds off, especially near <code>x₁ ≈ −2</code> and <code>x₁ ≈ +1.5</code>.<br>
+That’s the price of asking seven neighbors for advice: you reduce noise but also blunt fine detail.</p></li>
+<li><p><strong>Isolated errors.</strong><br>
+A few blue dots wander into orange territory (and vice-versa).<br>
+Those are points whose seven nearest neighbors straddle the curve; the vote simply goes with the local majority.</p></li>
+<li><p><strong>Take-away.</strong><br>
+<strong>k = 7</strong> gives a reasonable, but not perfect match.<br>
+Smaller <em>k</em> would trace the wiggles more tightly (risking over-fit); larger <em>k</em> would smooth them away (risking under-fit).</p></li>
+</ul>
+</section>
+<section id="create-a-hold-out-test-set" class="level3">
+<h3 class="anchored" data-anchor-id="create-a-hold-out-test-set">Create a Hold-Out Test Set</h3>
+<p>A good classifier earns its stripes on <strong>unseen data</strong>, not the examples it learned from. So we’ll generate a fresh batch of 100 points using the <strong>same recipe</strong> as before, but flip the random seed to guarantee there’s <strong>no overlap</strong> with the training set.</p>
+<div id="cell-knn-test-data" class="cell" data-execution_count="13">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> Counter</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ── new seed so points differ from the training sample ────────────────────────</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">24</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>n_test <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>x1_t   <span class="op">=</span> np.random.uniform(<span class="op">-</span><span class="dv">3</span>, <span class="dv">3</span>, size<span class="op">=</span>n_test)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>x2_t   <span class="op">=</span> np.random.uniform(<span class="op">-</span><span class="dv">3</span>, <span class="dv">3</span>, size<span class="op">=</span>n_test)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># same curvy boundary</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>boundary_t       <span class="op">=</span> np.sin(<span class="dv">4</span> <span class="op">*</span> x1_t) <span class="op">+</span> x1_t</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>y_test           <span class="op">=</span> (x2_t <span class="op">&gt;</span> boundary_t).astype(<span class="bu">int</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>test_dat <span class="op">=</span> pd.DataFrame({<span class="st">"x1"</span>: x1_t, <span class="st">"x2"</span>: x2_t, <span class="st">"y"</span>: y_test})</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>test_dat[<span class="st">"y"</span>] <span class="op">=</span> test_dat[<span class="st">"y"</span>].astype(<span class="st">"category"</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Test set shape:"</span>, test_dat.shape)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>test_dat.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Test set shape: (100, 3)</code></pre>
+</div>
+<div id="knn-test-data" class="cell-output cell-output-display" data-execution_count="640">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">x1</th>
+<th data-quarto-table-cell-role="th">x2</th>
+<th data-quarto-table-cell-role="th">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>2.760104</td>
+<td>1.614976</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>1.197072</td>
+<td>-0.152494</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>2.999204</td>
+<td>0.114679</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>-1.679596</td>
+<td>2.665158</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>-0.833662</td>
+<td>0.861152</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+<section id="creating-our-own-knn" class="level3">
+<h3 class="anchored" data-anchor-id="creating-our-own-knn">Creating Our Own KNN</h3>
+<p>Let’s build our own KNN.</p>
+<p>The rules are simple:</p>
+<ol type="1">
+<li>For every test point, measure its Euclidean distance to all training points.<br>
+</li>
+<li>Grab the <em>k</em> closest neighbors (we’ll keep <strong>k = 7</strong> for consistency).<br>
+</li>
+<li>Assign the majority class among those neighbors.</li>
+</ol>
+<div id="knn-hand" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> knn_predict(train_X, train_y, test_X, k<span class="op">=</span><span class="dv">7</span>):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    preds <span class="op">=</span> []</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> x <span class="kw">in</span> test_X:</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ① compute distances to all training points</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        dists <span class="op">=</span> np.linalg.norm(train_X <span class="op">-</span> x, axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ② indices of k nearest</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>        idx   <span class="op">=</span> np.argsort(dists)[:k]</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ③ majority vote</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        votes <span class="op">=</span> Counter(train_y[idx]).most_common(<span class="dv">1</span>)[<span class="dv">0</span>][<span class="dv">0</span>]</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        preds.append(votes)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.array(preds)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co"># prepare arrays</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>train_X <span class="op">=</span> dat[[<span class="st">"x1"</span>, <span class="st">"x2"</span>]].to_numpy()</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>train_y <span class="op">=</span> dat[<span class="st">"y"</span>].astype(<span class="bu">int</span>).to_numpy()</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>test_X  <span class="op">=</span> test_dat[[<span class="st">"x1"</span>, <span class="st">"x2"</span>]].to_numpy()</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>test_y  <span class="op">=</span> test_dat[<span class="st">"y"</span>].astype(<span class="bu">int</span>).to_numpy()</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="co"># DIY predictions</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>y_pred_hand <span class="op">=</span> knn_predict(train_X, train_y, test_X, k<span class="op">=</span><span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Our custom <code>knn_predict</code> function now returns a class label for each of the 100 hold-out customers.<br>
+Before handing the same task to scikit-learn, pause for two sanity checks:</p>
+<ol type="1">
+<li><strong>Logic audit</strong> : we relied only on Euclidean distance, majority vote, and a fixed <code>k</code>. Nothing else slipped in (no prior boundary info, no data leakage).<br>
+</li>
+<li><strong>Edge cases</strong> : ties are impossible with an odd <code>k</code>; if we had chosen an even number, we’d need a tie-breaker rule.</li>
+</ol>
+<section id="knn---scikit-learn" class="level4">
+<h4 class="anchored" data-anchor-id="knn---scikit-learn">KNN - scikit-learn</h4>
+<p>Now, lets double check our own KNN with scikit-learn.</p>
+<div id="knn-sklearn" class="cell" data-execution_count="15">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.neighbors <span class="im">import</span> KNeighborsClassifier</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> accuracy_score</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># scikit-learn model (same k)</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>sk_model <span class="op">=</span> KNeighborsClassifier(n_neighbors<span class="op">=</span><span class="dv">7</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>sk_model.fit(train_X, train_y)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>y_pred_sk <span class="op">=</span> sk_model.predict(test_X)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare predictions</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>match_rate <span class="op">=</span> (y_pred_hand <span class="op">==</span> y_pred_sk).mean()</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>acc_test   <span class="op">=</span> accuracy_score(test_y, y_pred_hand)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"DIY vs sklearn label match:  </span><span class="sc">{</span>match_rate<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Test-set accuracy (k = 7) :  </span><span class="sc">{</span>acc_test<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>DIY vs sklearn label match:  1.000
+Test-set accuracy (k = 7) :  0.890</code></pre>
+</div>
+</div>
+<ul>
+<li><p><strong>Perfect label match (1.000).</strong><br>
+Every single prediction from our hand-coded loop matches scikit-learn’s output. That confirms the distance calculation, neighbor sorting, and majority vote logic are all spot-on.</p></li>
+<li><p><strong>Test accuracy ≈ 0.89.</strong><br>
+On genuinely unseen customers the model classifies almost nine out of ten correctly, a solid score given the noisy, non-linear boundary.</p></li>
+</ul>
+</section>
+</section>
+<section id="fine-tuning-the-neighborhood-accuracy-curve-for-k-1-30" class="level3">
+<h3 class="anchored" data-anchor-id="fine-tuning-the-neighborhood-accuracy-curve-for-k-1-30">Fine-Tuning the Neighborhood — Accuracy Curve for <em>k</em> = 1 … 30</h3>
+<p>So far we’ve stuck with <strong>k = 7</strong>, but the bias-variance trade-off in KNN depends heavily on that single integer:</p>
+<ul>
+<li><strong>Small k</strong> → very flexible, can hug every wiggle but risks over-fitting noise.<br>
+</li>
+<li><strong>Large k</strong> → smoother boundary, less noise-sensitive, but may blur subtle patterns.</li>
+</ul>
+<p>Let’s sweep <em>k</em> from <strong>1 to 30</strong>, compute test-set accuracy each time, and let the curve reveal the sweet spot.</p>
+<div id="knn-grid" class="cell" data-execution_count="16">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np, pandas <span class="im">as</span> pd</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>acc_scores <span class="op">=</span> []</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">31</span>):</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    preds <span class="op">=</span> knn_predict(train_X, train_y, test_X, k<span class="op">=</span>k)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    acc   <span class="op">=</span> (preds <span class="op">==</span> test_y).mean()</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    acc_scores.append({<span class="st">"k"</span>: k, <span class="st">"Accuracy"</span>: acc})</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>k_df <span class="op">=</span> pd.DataFrame(acc_scores)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div id="cell-knn-acc-plot" class="cell" data-execution_count="17">
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="hw4_questions_files/figure-html/knn-acc-plot-output-1.png" id="knn-acc-plot" width="662" height="374" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>The line hovers around <strong>90 %–94 %</strong> across the full sweep, so KNN is generally robust on this task.<br>
+</li>
+<li><strong>Peak accuracy</strong> occurs at <strong>k ≈ 2</strong> (≈ 94 %).<br>
+<em>k = 1</em> ties for first but is more volatile; any tiny noise flip changes the vote.<br>
+</li>
+<li>Accuracy drifts downward once <em>k</em> exceeds ~10—evidence that a very large neighborhood blurs the nuanced wiggles we want to capture.</li>
+</ul>
+<p><strong>Recommended neighbor count:</strong> <strong>k = 2</strong></p>
+<p>It edges out larger choices in accuracy while keeping the decision boundary reasonably smooth.</p>
+</section>
+</section>
+<section id="final-reflections-from-penguins-to-synthetic-customers" class="level2">
+<h2 class="anchored" data-anchor-id="final-reflections-from-penguins-to-synthetic-customers">Final Reflections : From Penguins to Synthetic Customers</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 24%">
+<col style="width: 35%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Section</th>
+<th>Core Lesson</th>
+<th>Decision Made</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>K-Means (unsupervised)</strong></td>
+<td>Hand-coded loop plus elbow + silhouette showed three tight clusters, matching biological reality and scikit-learn.</td>
+<td><strong>k = 3</strong></td>
+</tr>
+<tr class="even">
+<td><strong>KNN (supervised)</strong></td>
+<td>DIY classifier matched scikit-learn exactly; grid search on hold-out data identified the most reliable neighborhood size.</td>
+<td><strong>k = 2</strong></td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
